@@ -1,0 +1,400 @@
+export type Role = 'ADMIN' | 'CUSTOMER';
+export type ProductType = 'SIMPLE' | 'VARIABLE';
+export type ProductStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+export type PostStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+
+export interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string | null;
+  role: Role;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string;
+  addresses?: Address[];
+  _count?: {
+    addresses?: number;
+    blogPosts?: number;
+  };
+}
+
+export interface Address {
+  id: string;
+  userId: string;
+  title: string;
+  recipientName: string;
+  phone: string;
+  street: string;
+  city: string;
+  province: string;
+  postalCode: string;
+  isDefaultShipping: boolean;
+  isDefaultBilling: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  image?: string | null;
+  parentId?: string | null;
+  parent?: Category | null;
+  children?: Category[];
+  displayOrder: number;
+  _count?: {
+    products?: number;
+    children?: number;
+  };
+}
+
+export interface AttributeValue {
+  id: string;
+  attributeId: string;
+  name: string;
+  value: string;
+  colorHex?: string | null;
+  image?: string | null;
+  attribute?: Attribute;
+}
+
+export interface Attribute {
+  id: string;
+  name: string;
+  slug: string;
+  displayType?: 'COLOR' | 'IMAGE' | 'TEXT' | string;
+  values?: AttributeValue[];
+  _count?: {
+    productAttributes?: number;
+  };
+}
+
+export interface VariantAttributeValue {
+  id: string;
+  variantId: string;
+  attributeValueId: string;
+  attributeValue: AttributeValue;
+}
+
+export interface ProductVariant {
+  id: string;
+  productId: string;
+  sku: string;
+  price: string | number;
+  salePrice?: string | number | null;
+  stockQuantity: number;
+  image?: string | null;
+  weight?: string | number | null;
+  dimensions?: string | null;
+  isActive: boolean;
+  attributeValues?: VariantAttributeValue[];
+}
+
+export interface ProductImage {
+  id: string;
+  productId: string;
+  url: string;
+  altText?: string | null;
+  displayOrder: number;
+  isPrimary: boolean;
+}
+
+export interface ProductAttribute {
+  id: string;
+  productId: string;
+  attributeId: string;
+  isVariation: boolean;
+  attribute: Attribute;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  slug: string;
+  sku?: string | null;
+  productType: ProductType;
+  description: string;
+  shortDescription?: string | null;
+  basePrice: string | number;
+  salePrice?: string | number | null;
+  stockQuantity: number;
+  manageStock: boolean;
+  dimensions?: string | null;
+  weight?: string | number | null;
+  specifications?: Array<{ label: string; value: string }> | null;
+  featured: boolean;
+  status: ProductStatus;
+  categoryId?: string | null;
+  category?: Category | null;
+  images?: ProductImage[];
+  attributes?: ProductAttribute[];
+  variants?: ProductVariant[];
+  _count?: {
+    variants?: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BlogCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  image?: string | null;
+  parentId?: string | null;
+  parent?: BlogCategory | null;
+  children?: BlogCategory[];
+  displayOrder?: number;
+  _count?: {
+    posts?: number;
+    children?: number;
+  };
+}
+
+export interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  excerpt?: string | null;
+  featuredImage?: string | null;
+  status: PostStatus;
+  authorId: string;
+  author?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  categoryId?: string | null;
+  category?: BlogCategory | null;
+  publishedAt?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface MediaItem {
+  id: string;
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  url: string;
+  altText?: string | null;
+  caption?: string | null;
+  width?: number | null;
+  height?: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  statusCode: number;
+  data: T;
+  meta?: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+// ----------------------------------------------------
+// Orders, Shipping & Payment Types
+// ----------------------------------------------------
+
+export type OrderStatus =
+  | 'PENDING'
+  | 'PROCESSING'
+  | 'SHIPPED'
+  | 'DELIVERED'
+  | 'CANCELLED'
+  | 'REFUNDED';
+
+export type PaymentStatus =
+  | 'PENDING'
+  | 'PAID'
+  | 'FAILED'
+  | 'REFUNDED'
+  | 'PARTIALLY_REFUNDED';
+
+export type TransactionStatus =
+  | 'INITIATED'
+  | 'PENDING'
+  | 'SUCCESS'
+  | 'FAILED'
+  | 'REFUNDED';
+
+export type DiscountType = 'PERCENTAGE' | 'FIXED_AMOUNT';
+
+export interface Coupon {
+  id: string;
+  code: string;
+  description?: string | null;
+  discountType: DiscountType;
+  discountValue: number | string;
+  minOrderAmount?: number | string | null;
+  maxDiscountAmount?: number | string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  usageLimit?: number | null;
+  usageCount: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  _count?: {
+    orders?: number;
+  };
+}
+
+export interface ValidatedCoupon {
+  id: string;
+  code: string;
+  discountType: string;
+  discountValue: number;
+}
+
+export interface OrderItem {
+  id: string;
+  orderId: string;
+  productId?: string | null;
+  variantId?: string | null;
+  productName: string;
+  productSku?: string | null;
+  variantName?: string | null;
+  productImage?: string | null;
+  unitPrice: number | string;
+  quantity: number;
+  totalPrice: number | string;
+  selectedAttributes?: Record<string, string> | null;
+  createdAt: string;
+  product?: {
+    id: string;
+    name: string;
+    slug: string;
+    productType: ProductType;
+  } | null;
+  variant?: {
+    id: string;
+    sku: string;
+  } | null;
+}
+
+export interface OrderTimeline {
+  id: string;
+  orderId: string;
+  status: OrderStatus;
+  note?: string | null;
+  createdAt: string;
+}
+
+export interface OrderTransaction {
+  id: string;
+  orderId: string;
+  gateway: string;
+  transactionId?: string | null;
+  status: TransactionStatus;
+  amount: number | string;
+  currency: string;
+  cardPan?: string | null;
+  trackingCode?: string | null;
+  errorMessage?: string | null;
+  gatewayResponse?: any;
+  createdAt: string;
+}
+
+export interface OrderAddress {
+  recipientName: string;
+  phone: string;
+  street: string;
+  city: string;
+  province: string;
+  postalCode: string;
+  country?: string;
+}
+
+export interface Order {
+  id: string;
+  orderNumber: string;
+  userId?: string | null;
+  user?: User | null;
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string | null;
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  paymentMethod: string;
+  transactionId?: string | null;
+  paidAt?: string | null;
+  subtotal: number | string;
+  discountAmount: number | string;
+  shippingAmount: number | string;
+  taxAmount: number | string;
+  totalAmount: number | string;
+  currency: string;
+  couponId?: string | null;
+  coupon?: Coupon | null;
+  couponCode?: string | null;
+  shippingAddress: OrderAddress;
+  billingAddress?: OrderAddress | null;
+  shippingMethod?: string | null;
+  shippingCarrier?: string | null;
+  trackingNumber?: string | null;
+  trackingUrl?: string | null;
+  shippedAt?: string | null;
+  deliveredAt?: string | null;
+  customerNotes?: string | null;
+  internalNotes?: string | null;
+  items: OrderItem[];
+  timeline: OrderTimeline[];
+  transactions?: OrderTransaction[];
+  _count?: {
+    items?: number;
+    transactions?: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OrderStats {
+  totalRevenue: number;
+  totalOrders: number;
+  averageOrderValue: number;
+  pendingCount: number;
+  processingCount: number;
+  shippedCount: number;
+  deliveredCount: number;
+  cancelledCount: number;
+  recentOrders: Order[];
+}
+
+export interface ShippingMethodOption {
+  id: string;
+  name: string;
+  type?: string;
+  carrier: string;
+  price: number;
+  currency: string;
+  estimatedDays: string;
+  description: string;
+  isDefault?: boolean;
+  isActive?: boolean;
+  displayOrder?: number;
+  supportsTracking: boolean;
+}
+
+export interface PaymentGatewayOption {
+  id: string;
+  name: string;
+  type: 'IRANIAN_SHAPARAK' | 'INTERNATIONAL_CARD' | 'OFFLINE';
+  description: string;
+  currencies: string[];
+  logo?: string;
+  isActive: boolean;
+}
+
