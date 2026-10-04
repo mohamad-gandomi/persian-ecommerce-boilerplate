@@ -523,3 +523,12 @@ export interface ReferralItem {
   }>;
 }
 
+export interface FeaturesConfig {
+  blog: boolean;
+  wallet: boolean;
+  referral: boolean;
+  coupons: boolean;
+  attributes: boolean;
+}
+
+

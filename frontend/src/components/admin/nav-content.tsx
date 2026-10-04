@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api, API_BASE } from '@/lib/api';
+import { useFeatures } from '@/lib/use-features';
 import { NavItemList } from './nav-item-list';
 import { shopNavItems, mediaNavItems, blogNavItems, type NavItem } from './nav-data';
 
@@ -27,6 +28,16 @@ type AccordionSection = 'shop' | 'media' | 'blog' | 'tools';
 
 export function NavContent({ onItemClick }: { onItemClick?: () => void }) {
   const pathname = usePathname();
+  const { isEnabled } = useFeatures();
+
+  const visibleShopNavItems = React.useMemo(() => {
+    return shopNavItems.filter((item) => !item.featureKey || isEnabled(item.featureKey));
+  }, [isEnabled]);
+
+  const visibleBlogNavItems = React.useMemo(() => {
+    return blogNavItems.filter((item) => !item.featureKey || isEnabled(item.featureKey));
+  }, [isEnabled]);
+
   const [openSections, setOpenSections] = React.useState<Record<AccordionSection, boolean>>({
     shop: true,
     media: true,
@@ -88,11 +99,11 @@ export function NavContent({ onItemClick }: { onItemClick?: () => void }) {
               <span>فروشگاه و محصولات</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-sans text-muted-foreground bg-muted px-1.5 py-0.2 rounded">{shopNavItems.length}</span>
+              <span className="text-[10px] font-sans text-muted-foreground bg-muted px-1.5 py-0.2 rounded">{visibleShopNavItems.length}</span>
               <ChevronDown className={cn('w-3.5 h-3.5 text-muted-foreground transition-transform duration-200', openSections.shop && 'rotate-180 text-foreground')} />
             </div>
           </button>
-          {openSections.shop && <div className="animate-in fade-in-50 duration-150"><NavItemList items={shopNavItems} onItemClick={onItemClick} /></div>}
+          {openSections.shop && <div className="animate-in fade-in-50 duration-150"><NavItemList items={visibleShopNavItems} onItemClick={onItemClick} /></div>}
         </div>
 
         {/* Section 2: Media */}
@@ -115,23 +126,25 @@ export function NavContent({ onItemClick }: { onItemClick?: () => void }) {
         </div>
 
         {/* Section 3: Blog */}
-        <div className="rounded-xl border border-border/60 bg-card/50 overflow-hidden shadow-2xs">
-          <button
-            type="button"
-            onClick={() => handleToggle('blog')}
-            className={cn('w-full flex items-center justify-between px-3.5 py-2.5 text-xs font-bold tracking-wide transition-all text-right select-none', openSections.blog ? 'bg-emerald-50/80 text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300 border-b border-border/50' : 'text-muted-foreground hover:text-foreground hover:bg-accent/30')}
-          >
-            <div className="flex items-center gap-2.5">
-              <BookOpen className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span>وبلاگ و مقالات</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-sans text-muted-foreground bg-muted px-1.5 py-0.2 rounded">{blogNavItems.length}</span>
-              <ChevronDown className={cn('w-3.5 h-3.5 text-muted-foreground transition-transform duration-200', openSections.blog && 'rotate-180 text-foreground')} />
-            </div>
-          </button>
-          {openSections.blog && <div className="animate-in fade-in-50 duration-150"><NavItemList items={blogNavItems} onItemClick={onItemClick} /></div>}
-        </div>
+        {isEnabled('blog') && visibleBlogNavItems.length > 0 && (
+          <div className="rounded-xl border border-border/60 bg-card/50 overflow-hidden shadow-2xs">
+            <button
+              type="button"
+              onClick={() => handleToggle('blog')}
+              className={cn('w-full flex items-center justify-between px-3.5 py-2.5 text-xs font-bold tracking-wide transition-all text-right select-none', openSections.blog ? 'bg-emerald-50/80 text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300 border-b border-border/50' : 'text-muted-foreground hover:text-foreground hover:bg-accent/30')}
+            >
+              <div className="flex items-center gap-2.5">
+                <BookOpen className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>وبلاگ و مقالات</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-sans text-muted-foreground bg-muted px-1.5 py-0.2 rounded">{visibleBlogNavItems.length}</span>
+                <ChevronDown className={cn('w-3.5 h-3.5 text-muted-foreground transition-transform duration-200', openSections.blog && 'rotate-180 text-foreground')} />
+              </div>
+            </button>
+            {openSections.blog && <div className="animate-in fade-in-50 duration-150"><NavItemList items={visibleBlogNavItems} onItemClick={onItemClick} /></div>}
+          </div>
+        )}
 
         {/* Section 4: Dev & Tools */}
         <div className="rounded-xl border border-border/60 bg-card/50 overflow-hidden shadow-2xs">

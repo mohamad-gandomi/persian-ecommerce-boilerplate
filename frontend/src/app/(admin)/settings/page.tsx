@@ -25,10 +25,18 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ReferralSettings } from '@/types';
+import { useFeatures } from '@/lib/use-features';
 
 export default function SettingsPage() {
   const queryClient = useQueryClient();
+  const { isEnabled } = useFeatures();
   const [activeTab, setActiveTab] = React.useState('store');
+
+  React.useEffect(() => {
+    if (!isEnabled('referral') && activeTab === 'referral') {
+      setActiveTab('store');
+    }
+  }, [isEnabled, activeTab]);
 
   // ----------------------------------------------------
   // 1. Store General Settings
@@ -78,6 +86,7 @@ export default function SettingsPage() {
   const { data: remoteReferralSettings } = useQuery({
     queryKey: ['admin-referral-settings'],
     queryFn: () => api.getAdminReferralSettings(),
+    enabled: isEnabled('referral'),
   });
 
   React.useEffect(() => {
@@ -158,10 +167,12 @@ export default function SettingsPage() {
                 <Store className="w-4 h-4 shrink-0 text-primary" />
                 <span>مشخصات فروشگاه</span>
               </TabsTrigger>
-              <TabsTrigger value="referral" className="gap-2 py-2 px-3.5 text-xs font-semibold rounded-lg font-sans shrink-0 whitespace-nowrap">
-                <Gift className="w-4 h-4 shrink-0 text-purple-600" />
-                <span>سیستم معرف و پاداش</span>
-              </TabsTrigger>
+              {isEnabled('referral') && (
+                <TabsTrigger value="referral" className="gap-2 py-2 px-3.5 text-xs font-semibold rounded-lg font-sans shrink-0 whitespace-nowrap">
+                  <Gift className="w-4 h-4 shrink-0 text-purple-600" />
+                  <span>سیستم معرف و پاداش</span>
+                </TabsTrigger>
+              )}
               <TabsTrigger value="media" className="gap-2 py-2 px-3.5 text-xs font-semibold rounded-lg font-sans shrink-0 whitespace-nowrap">
                 <ImageIcon className="w-4 h-4 shrink-0 text-emerald-600" />
                 <span>بهینه‌سازی تصاویر و WebP</span>
@@ -248,8 +259,9 @@ export default function SettingsPage() {
           </TabsContent>
 
           {/* TAB 2: Referral & Rewards Settings */}
-          <TabsContent value="referral" className="space-y-6 m-0">
-            <Card className="border-border/80 shadow-2xs font-sans">
+          {isEnabled('referral') && (
+            <TabsContent value="referral" className="space-y-6 m-0">
+              <Card className="border-border/80 shadow-2xs font-sans">
               <CardHeader className="text-right">
                 <CardTitle className="text-base font-bold flex items-center gap-2 text-purple-700 dark:text-purple-400">
                   <Gift className="w-4 h-4" />
@@ -441,6 +453,7 @@ export default function SettingsPage() {
               </CardFooter>
             </Card>
           </TabsContent>
+          )}
 
           {/* TAB 3: Media & WebP Settings */}
           <TabsContent value="media" className="space-y-6 m-0">

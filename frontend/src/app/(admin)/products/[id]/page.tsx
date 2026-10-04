@@ -18,8 +18,10 @@ import { ProductVariationsTab } from '@/components/admin/products/editor/product
 import { ProductMediaTab } from '@/components/admin/products/editor/product-media-tab';
 import { ProductDeleteModal } from '@/components/admin/products/product-delete-modal';
 import { useProductEditor } from '@/components/admin/products/editor/use-product-editor';
+import { useFeatures } from '@/lib/use-features';
 
 export default function ProductDetailPage() {
+  const { isEnabled } = useFeatures();
   const params = useParams();
   const productId = params.id as string;
   const [activeTab, setActiveTab] = React.useState('overview');

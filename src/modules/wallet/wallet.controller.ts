@@ -16,8 +16,10 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { Role } from '@/common/enums/role.enum';
+import { RequireFeature } from '@/common/decorators/require-feature.decorator';
 
 @ApiTags('Wallet')
+@RequireFeature('wallet')
 @Controller('wallet')
 export class WalletController {
   constructor(private readonly walletService: WalletService) {}

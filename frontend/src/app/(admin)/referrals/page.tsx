@@ -24,6 +24,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { ReferralItem } from '@/types';
 import { ReferralsMobileList } from '@/components/admin/referrals/referrals-mobile-list';
+import { FeaturePageGuard } from '@/components/admin/feature-guard';
 
 export default function ReferralsPage() {
   const queryClient = useQueryClient();
@@ -45,8 +46,9 @@ export default function ReferralsPage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-screen bg-background font-sans" dir="rtl">
-      <Header title="سیستم معرف و پاداش وفاداری" />
+    <FeaturePageGuard feature="referral" featureTitle="سیستم معرف و پاداش">
+      <div className="flex-1 flex flex-col min-h-screen bg-background font-sans" dir="rtl">
+        <Header title="سیستم معرف و پاداش وفاداری" />
 
       <div className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full">
         {/* KPI Cards */}
@@ -282,5 +284,6 @@ export default function ReferralsPage() {
         </Card>
       </div>
     </div>
+    </FeaturePageGuard>
   );
 }

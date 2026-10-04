@@ -17,6 +17,7 @@ import { AttributeFormModal } from '@/components/admin/attributes/attribute-form
 import { AttributeTermModal } from '@/components/admin/attributes/attribute-term-modal';
 import { AttributeDeleteModal } from '@/components/admin/attributes/attribute-delete-modal';
 import { AttributeTermDeleteModal } from '@/components/admin/attributes/attribute-term-delete-modal';
+import { FeaturePageGuard } from '@/components/admin/feature-guard';
 
 export default function AttributesPage() {
   const queryClient = useQueryClient();
@@ -104,8 +105,9 @@ export default function AttributesPage() {
   };
 
   return (
-    <div className="space-y-8 pb-16 font-sans" dir="rtl">
-      <Header title="مدیریت ویژگی‌ها و مشخصات" />
+    <FeaturePageGuard feature="attributes" featureTitle="ویژگی‌ها و مشخصات">
+      <div className="space-y-8 pb-16 font-sans" dir="rtl">
+        <Header title="مدیریت ویژگی‌ها و مشخصات" />
       <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-6">
         <AttributesToolbar search={search} onSearchChange={setSearch} typeFilter={typeFilter} onTypeFilterChange={setTypeFilter} onOpenCreateAttr={() => setAttrDialog({ isOpen: true, mode: 'CREATE' })} />
         <AttributesKpis {...stats} />
@@ -188,5 +190,6 @@ export default function AttributesPage() {
         description="تصویر واضحی از طرح، الگو یا نمونه را برای این گزینه انتخاب کنید."
       />
     </div>
+    </FeaturePageGuard>
   );
 }

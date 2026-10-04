@@ -21,8 +21,10 @@ import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { Role } from '@/common/enums/role.enum';
+import { RequireFeature } from '@/common/decorators/require-feature.decorator';
 
 @ApiTags('Blog & Interior Design Articles')
+@RequireFeature('blog')
 @Controller('blog')
 export class BlogController {
   constructor(private readonly blogService: BlogService) {}

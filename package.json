@@ -23,7 +23,9 @@
     "prisma:seed": "ts-node prisma/seed.ts",
     "prisma:studio": "prisma studio",
     "media:sync": "node scripts/sync-media-library-webp.js",
-    "db:setup": "pnpm prisma:generate && pnpm prisma:push && pnpm prisma:seed"
+    "db:init": "ts-node prisma/init-db.ts",
+    "db:seed": "ts-node prisma/seed.ts",
+    "db:setup": "pnpm prisma:generate && pnpm prisma:push && pnpm db:init"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

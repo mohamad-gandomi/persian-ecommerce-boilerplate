@@ -15,12 +15,14 @@ import {
   Settings,
   type LucideIcon,
 } from 'lucide-react';
+import { FeaturesConfig } from '@/types';
 
 export interface NavItem {
   title: string;
   href: string;
   icon: LucideIcon;
   badge?: string;
+  featureKey?: keyof FeaturesConfig;
   onClick?: () => void;
 }
 
@@ -34,11 +36,13 @@ export const shopNavItems: NavItem[] = [
     title: 'کیف‌پول‌ها',
     href: '/wallets',
     icon: Wallet,
+    featureKey: 'wallet',
   },
   {
     title: 'سیستم معرف و پاداش',
     href: '/referrals',
     icon: Gift,
+    featureKey: 'referral',
   },
   {
     title: 'روش‌های ارسال',
@@ -49,6 +53,7 @@ export const shopNavItems: NavItem[] = [
     title: 'کدهای تخفیف',
     href: '/coupons',
     icon: Tag,
+    featureKey: 'coupons',
   },
   {
     title: 'محصولات',
@@ -59,6 +64,7 @@ export const shopNavItems: NavItem[] = [
     title: 'ویژگی‌ها و متغیرها',
     href: '/attributes',
     icon: Palette,
+    featureKey: 'attributes',
   },
   {
     title: 'دسته‌بندی‌های محصولات',
@@ -95,10 +101,12 @@ export const blogNavItems: NavItem[] = [
     title: 'نوشته‌ها و مقالات',
     href: '/admin/blog',
     icon: BookOpen,
+    featureKey: 'blog',
   },
   {
     title: 'دسته‌بندی‌های مقالات',
     href: '/admin/blog/categories',
     icon: BookmarkCheck,
+    featureKey: 'blog',
   },
 ];

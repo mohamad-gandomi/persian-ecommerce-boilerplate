@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@/database/prisma.service';
 import { CouponsService } from '@/modules/coupons/coupons.service';
 import { ShippingService } from '@/modules/shipping/shipping.service';
@@ -22,6 +23,7 @@ export class OrdersService {
     private shippingService: ShippingService,
     private walletService: WalletService,
     private referralService: ReferralService,
+    private configService: ConfigService,
   ) {}
 
   async findAll(filters: FilterOrdersDto) {
@@ -398,8 +400,9 @@ export class OrdersService {
     let discountAmount = 0;
     let couponId: string | null = null;
     let couponCode: string | null = null;
+    const isCouponsEnabled = this.configService.get<boolean>('features.coupons', true);
 
-    if (dto.couponCode) {
+    if (dto.couponCode && isCouponsEnabled) {
       const validation = await this.couponsService.validateCoupon(dto.couponCode, subtotal);
       if (validation.valid) {
         discountAmount = validation.discountAmount;
@@ -411,8 +414,8 @@ export class OrdersService {
 
     // Shipping calculation
     let shippingAmount = 50.0;
-    let shippingMethodName = dto.shippingMethod || 'Standard Furniture Freight';
-    let carrierName = dto.shippingCarrier || 'Chapar / Old Dominion';
+    let shippingMethodName = dto.shippingMethod || 'Standard Delivery';
+    let carrierName = dto.shippingCarrier || 'Standard Carrier';
 
     if (dto.shippingMethod) {
       const allMethods = await this.shippingService.findAll();
@@ -437,7 +440,8 @@ export class OrdersService {
 
     // Resolve referral association if applicable
     let referralId: string | null = null;
-    if (resolvedUserId) {
+    const isReferralEnabled = this.configService.get<boolean>('features.referral', true);
+    if (resolvedUserId && isReferralEnabled) {
       if (dto.referralCode) {
         try {
           const bound = await this.referralService.bindReferee(resolvedUserId, dto.referralCode);
@@ -459,8 +463,9 @@ export class OrdersService {
     let cashAmountPaid = totalAmount;
     let initialPaymentStatus: PaymentStatus = PaymentStatus.PENDING;
     let paidAt: Date | null = null;
+    const isWalletEnabled = this.configService.get<boolean>('features.wallet', true);
 
-    if (dto.useWalletBalance && resolvedUserId) {
+    if (dto.useWalletBalance && resolvedUserId && isWalletEnabled) {
       const walletInfo = await this.walletService.getBalance(resolvedUserId);
       if (walletInfo.isActive && walletInfo.balance > 0) {
         if (walletInfo.balance >= totalAmount) {
@@ -613,7 +618,8 @@ export class OrdersService {
     });
 
     // 1. Release referral rewards when order is DELIVERED
-    if (newStatus === OrderStatus.DELIVERED) {
+    const isReferralEnabled = this.configService.get<boolean>('features.referral', true);
+    if (newStatus === OrderStatus.DELIVERED && isReferralEnabled) {
       try {
         await this.referralService.releaseOrderReward(order.id);
       } catch (err) {
@@ -622,8 +628,10 @@ export class OrdersService {
     }
 
     // 2. Automatically refund wallet balance if order was cancelled or refunded
+    const isWalletEnabled = this.configService.get<boolean>('features.wallet', true);
     if (
       (newStatus === OrderStatus.CANCELLED || newStatus === OrderStatus.REFUNDED) &&
+      isWalletEnabled &&
       Number(order.walletAmountPaid) > 0 &&
       order.userId
     ) {

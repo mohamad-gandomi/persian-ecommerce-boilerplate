@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@/database/prisma.service';
 
 export const DEFAULT_SETTINGS: Record<string, any> = {
@@ -20,7 +21,21 @@ export const DEFAULT_SETTINGS: Record<string, any> = {
 export class SettingsService {
   private readonly logger = new Logger(SettingsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {}
+
+  getFeatures(): Record<string, boolean> {
+    return {
+      blog: this.configService.get<boolean>('features.blog', true),
+      wallet: this.configService.get<boolean>('features.wallet', true),
+      referral: this.configService.get<boolean>('features.referral', true),
+      coupons: this.configService.get<boolean>('features.coupons', true),
+      attributes: this.configService.get<boolean>('features.attributes', true),
+    };
+  }
+
 
   async get(key: string): Promise<any> {
     const record = await this.prisma.systemSetting.findUnique({

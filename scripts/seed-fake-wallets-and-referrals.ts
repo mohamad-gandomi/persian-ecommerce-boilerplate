@@ -4,6 +4,14 @@ import * as bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
+  const isWalletEnabled = process.env.FEATURE_WALLET !== 'false';
+  const isReferralEnabled = process.env.FEATURE_REFERRAL !== 'false';
+
+  if (!isWalletEnabled && !isReferralEnabled) {
+    console.log('⏩ Both Wallet and Referral features are disabled in .env. Skipping fake data seed.');
+    return;
+  }
+
   console.log('🚀 Seeding Fake Wallets, Transactions, Referral Codes & Products Reward Data...');
 
   // 1. Ensure realistic users exist
@@ -46,7 +54,8 @@ async function main() {
   await prisma.walletTransaction.deleteMany();
 
   // 3. Upsert Wallets with realistic balances (in Tomans - IRT)
-  const walletPresets: Record<string, number> = {
+  if (isWalletEnabled) {
+    const walletPresets: Record<string, number> = {
     'admin@store.local': 5000000,
     'customer@store.local': 1250000,
     'eleanor.vance@example.com': 840000,
@@ -163,10 +172,14 @@ async function main() {
       });
     }
   }
-  console.log('📊 Ledger transactions seeded.');
+    console.log('📊 Ledger transactions seeded.');
+  } else {
+    console.log('⏩ Wallet feature is disabled (FEATURE_WALLET=false), skipping wallet seeding.');
+  }
 
   // 5. Seed Referral Codes
-  const referralCodesConfig = [
+  if (isReferralEnabled) {
+    const referralCodesConfig = [
     { email: 'customer@store.local', code: 'ALEX2026', clickCount: 142, successfulReferrals: 18, totalEarned: 950000 },
     { email: 'eleanor.vance@example.com', code: 'ELEANOR', clickCount: 89, successfulReferrals: 11, totalEarned: 540000 },
     { email: 'marcus.chen@example.com', code: 'MARCUS_VIP', clickCount: 215, successfulReferrals: 27, totalEarned: 1350000 },
@@ -307,7 +320,12 @@ async function main() {
     }
   }
 
-  console.log('✨ All fake data seeded successfully!');
+  console.log('✨ Referral fake data seeded successfully!');
+  } else {
+    console.log('⏩ Referral feature is disabled (FEATURE_REFERRAL=false), skipping referral seeding.');
+  }
+
+  console.log('✨ All active fake data seeded successfully!');
 }
 
 main()

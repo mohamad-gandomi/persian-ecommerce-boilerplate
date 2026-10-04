@@ -11,6 +11,7 @@ import { CouponsTable } from '@/components/admin/coupons/coupons-table';
 import { CouponsMobileList } from '@/components/admin/coupons/coupons-mobile-list';
 import { CouponFormModal } from '@/components/admin/coupons/coupon-form-modal';
 import { CouponDeleteModal } from '@/components/admin/coupons/coupon-delete-modal';
+import { FeaturePageGuard } from '@/components/admin/feature-guard';
 
 export default function CouponsPage() {
   const queryClient = useQueryClient();
@@ -85,8 +86,9 @@ export default function CouponsPage() {
   });
 
   return (
-    <div className="space-y-8 pb-16 font-sans" dir="rtl">
-      <Header title="کدهای تخفیف و جشنواره" />
+    <FeaturePageGuard feature="coupons" featureTitle="کدهای تخفیف">
+      <div className="space-y-8 pb-16 font-sans" dir="rtl">
+        <Header title="کدهای تخفیف و جشنواره" />
 
       <div className="px-4 sm:px-8 max-w-7xl mx-auto space-y-6">
         <CouponsToolbar
@@ -134,5 +136,6 @@ export default function CouponsPage() {
         isPending={deleteCouponMutation.isPending}
       />
     </div>
+    </FeaturePageGuard>
   );
 }

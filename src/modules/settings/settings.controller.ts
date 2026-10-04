@@ -28,6 +28,13 @@ export class SettingsController {
   }
 
   @Public()
+  @Get('features')
+  @ApiOperation({ summary: 'Public: Get list of active feature flags' })
+  getFeatures() {
+    return this.settingsService.getFeatures();
+  }
+
+  @Public()
   @Get(':key')
   @ApiOperation({ summary: 'Get system setting by key (e.g. media, store)' })
   getByKey(@Param('key') key: string) {

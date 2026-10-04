@@ -17,8 +17,10 @@ import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { Role } from '@/common/enums/role.enum';
+import { RequireFeature } from '@/common/decorators/require-feature.decorator';
 
 @ApiTags('Product Attributes & Variations')
+@RequireFeature('attributes')
 @Controller('attributes')
 export class AttributesController {
   constructor(private readonly attributesService: AttributesService) {}

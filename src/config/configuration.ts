@@ -1,3 +1,8 @@
+const parseBool = (val: string | undefined, defaultVal = true): boolean => {
+  if (val === undefined || val === '') return defaultVal;
+  return val === 'true' || val === '1';
+};
+
 export default () => ({
   port: parseInt(process.env.PORT || '4000', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
@@ -14,4 +19,12 @@ export default () => ({
     dir: process.env.UPLOAD_DIR || './uploads',
     maxSizeMb: parseInt(process.env.MAX_FILE_SIZE_MB || '5', 10),
   },
+  features: {
+    blog: parseBool(process.env.FEATURE_BLOG, true),
+    wallet: parseBool(process.env.FEATURE_WALLET, true),
+    referral: parseBool(process.env.FEATURE_REFERRAL, true),
+    coupons: parseBool(process.env.FEATURE_COUPONS, true),
+    attributes: parseBool(process.env.FEATURE_ATTRIBUTES, true),
+  },
 });
+

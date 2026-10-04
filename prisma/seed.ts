@@ -10,11 +10,32 @@ import {
   DiscountType,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const prisma = new PrismaClient();
+const PLACEHOLDER_IMAGE = 'http://localhost:4000/uploads/placeholder.webp';
+
+async function ensurePlaceholderImage() {
+  const uploadsDir = path.resolve(process.cwd(), 'uploads');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+
+  const placeholderPath = path.join(uploadsDir, 'placeholder.webp');
+  if (!fs.existsSync(placeholderPath)) {
+    try {
+      const { execSync } = require('child_process');
+      execSync('node scripts/generate-placeholder.js', { stdio: 'inherit' });
+    } catch {
+      // fallback
+    }
+  }
+}
 
 async function main() {
   console.log('🌱 Starting e-commerce database seed...');
+  await ensurePlaceholderImage();
 
   // 1. Clean existing records in reverse dependency order
   await prisma.walletTransaction.deleteMany();
@@ -138,13 +159,77 @@ async function main() {
 
   console.log(`👤 Users seeded: Admin (${admin.email}), Customers (${customer.email}, ${customer2.email}, ${customer3.email})`);
 
+  // Ensure default shipping methods exist
+  const shippingCount = await prisma.shippingMethod.count();
+  if (shippingCount === 0) {
+    await prisma.shippingMethod.createMany({
+      data: [
+        {
+          name: 'ارسال پیشتاز / استاندارد',
+          type: 'FIXED',
+          price: 45000,
+          currency: 'IRT',
+          carrier: 'شرکت ملی پست / تیپاکس',
+          estimatedDays: '۲ الی ۴ روز کاری',
+          description: 'تحویل سریع مرسوله با رهگیری لحظه‌ای پیامکی و بسته‌بندی ایمن',
+          isActive: true,
+          isDefault: true,
+          displayOrder: 1,
+        },
+        {
+          name: 'ارسال اکسپرس فوری (تهران)',
+          type: 'FIXED',
+          price: 85000,
+          currency: 'IRT',
+          carrier: 'پیک موتوری',
+          estimatedDays: 'کمتر از ۳ ساعت',
+          description: 'تحویل سریع در همان روز ویژه سفارش‌های داخل شهر تهران',
+          isActive: true,
+          isDefault: false,
+          displayOrder: 2,
+        },
+      ],
+    });
+    console.log('🚚 Default shipping methods initialized.');
+  }
+
+  // Ensure default system settings exist
+  await prisma.systemSetting.upsert({
+    where: { key: 'store' },
+    update: {},
+    create: {
+      key: 'store',
+      value: {
+        name: 'فروشگاه اینترنتی',
+        email: 'info@store.local',
+        phone: '۰۲۱-۸۸۹۹۰۰۱۱',
+        address: 'تهران، خیابان ولیعصر',
+        currency: 'IRT',
+      },
+    },
+  });
+
+  await prisma.systemSetting.upsert({
+    where: { key: 'media' },
+    update: {},
+    create: {
+      key: 'media',
+      value: {
+        convertToWebp: true,
+        qualityPreset: 80,
+        maxWidthOption: 2048,
+        showOptimizationOptions: false,
+      },
+    },
+  });
+
   // 3. Hierarchical Categories for Furniture
   const livingRoom = await prisma.category.create({
     data: {
       name: 'Living Room',
       slug: 'living-room',
       description: 'Handcrafted sofas, lounge chairs, and coffee tables built for elegance and comfort.',
-      image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc',
+      image: PLACEHOLDER_IMAGE,
       displayOrder: 1,
     },
   });
@@ -164,7 +249,7 @@ async function main() {
       name: 'Dining Room',
       slug: 'dining-room',
       description: 'Solid wood dining tables, benches, and ergonomic dining chairs.',
-      image: 'https://images.unsplash.com/photo-1617806118233-18e1de247200',
+      image: PLACEHOLDER_IMAGE,
       displayOrder: 2,
     },
   });
@@ -249,13 +334,13 @@ async function main() {
       images: {
         create: [
           {
-            url: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c',
+            url: PLACEHOLDER_IMAGE,
             altText: 'Nordic Minimalist Lounge Armchair Front View',
             isPrimary: true,
             displayOrder: 1,
           },
           {
-            url: 'https://images.unsplash.com/photo-1580481077198-1329621379c6',
+            url: PLACEHOLDER_IMAGE,
             altText: 'Nordic Minimalist Lounge Armchair Profile Angle',
             isPrimary: false,
             displayOrder: 2,
@@ -372,7 +457,7 @@ async function main() {
       images: {
         create: [
           {
-            url: 'https://images.unsplash.com/photo-1530018607912-eff2daa1bac4',
+            url: PLACEHOLDER_IMAGE,
             altText: 'Aalborg Solid White Oak Dining Table',
             isPrimary: true,
             displayOrder: 1,
@@ -384,22 +469,26 @@ async function main() {
 
   console.log('📦 Products seeded (Variable & Simple).');
 
-  // 6. Blog Section
-  const blogCategory = await prisma.blogCategory.create({
-    data: {
-      name: 'Woodcraft & Design Guides',
-      slug: 'woodcraft-and-design-guides',
-      description: 'Expert advice on woodworking, interior styling, and furniture longevity.',
-    },
-  });
+  const isBlogEnabled = process.env.FEATURE_BLOG !== 'false';
+  const isCouponsEnabled = process.env.FEATURE_COUPONS !== 'false';
 
-  await prisma.blogPost.create({
-    data: {
-      title: 'The Art of Hardwood Joinery: Why Solid Oak & Walnut Endure for Decades',
-      slug: 'the-art-of-hardwood-joinery-why-solid-oak-walnut-endure',
-      excerpt:
-        'Discover the difference between commercial veneer furniture and generational mortise-and-tenon craftsmanship.',
-      content: `
+  // 6. Blog Section
+  if (isBlogEnabled) {
+    const blogCategory = await prisma.blogCategory.create({
+      data: {
+        name: 'Woodcraft & Design Guides',
+        slug: 'woodcraft-and-design-guides',
+        description: 'Expert advice on woodworking, interior styling, and furniture longevity.',
+      },
+    });
+
+    await prisma.blogPost.create({
+      data: {
+        title: 'The Art of Hardwood Joinery: Why Solid Oak & Walnut Endure for Decades',
+        slug: 'the-art-of-hardwood-joinery-why-solid-oak-walnut-endure',
+        excerpt:
+          'Discover the difference between commercial veneer furniture and generational mortise-and-tenon craftsmanship.',
+        content: `
 # The Enduring Value of Hardwood Furniture
 
 When investing in furniture for your home, understanding construction techniques transforms the way you view everyday pieces.
@@ -412,157 +501,115 @@ Traditional interlocking joinery disperses mechanical loads across interlocking 
 
 ## 3. Natural Oil and Hardwax Finishes
 Unlike polyurethane plastic coatings that flake or yellow over time, hardwax oils penetrate into the pores of oak and walnut, preserving tactile wood grains and allowing effortless spot repairs without strip-sanding the whole piece.
-      `,
-      featuredImage: 'https://images.unsplash.com/photo-1540574163026-643ea20ade25',
-      status: PostStatus.PUBLISHED,
-      authorId: admin.id,
-      categoryId: blogCategory.id,
-      publishedAt: new Date(),
-    },
-  });
+        `,
+        featuredImage: PLACEHOLDER_IMAGE,
+        status: PostStatus.PUBLISHED,
+        authorId: admin.id,
+        categoryId: blogCategory.id,
+        publishedAt: new Date(),
+      },
+    });
 
-  console.log('✍️ Blog posts and categories seeded.');
+    console.log('✍️ Blog posts and categories seeded.');
+  } else {
+    console.log('⏩ Blog feature is disabled (FEATURE_BLOG=false), skipping blog seeding.');
+  }
 
-  // 6. Media Library Assets
+  // 6. Media Library Assets (Real physical placeholder file)
   await prisma.media.createMany({
     data: [
       {
-        filename: 'furniture-armchair-living-room.jpg',
-        originalName: 'nordic-minimalist-armchair.jpg',
-        mimeType: 'image/jpeg',
-        size: 348200,
-        url: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c',
-        altText: 'Nordic minimalist lounge armchair in American walnut and velvet',
-        caption: 'Nordic Minimalist Living Room Setup',
-        width: 1920,
-        height: 1280,
-      },
-      {
-        filename: 'furniture-dining-table-oak.jpg',
-        originalName: 'copenhagen-dining-table.jpg',
-        mimeType: 'image/jpeg',
-        size: 512400,
-        url: 'https://images.unsplash.com/photo-1617806118233-18e1de247200',
-        altText: 'Copenhagen solid white oak extending dining table',
-        caption: 'Dining Room Showcase Table',
-        width: 2400,
-        height: 1600,
-      },
-      {
-        filename: 'furniture-wood-joinery-detail.jpg',
-        originalName: 'artisan-wood-joinery.jpg',
-        mimeType: 'image/jpeg',
-        size: 289100,
-        url: 'https://images.unsplash.com/photo-1540574163026-643ea20ade25',
-        altText: 'Close up mortise and tenon joinery in solid walnut wood',
-        caption: 'Handcrafted Joint Detail',
-        width: 1800,
-        height: 1200,
-      },
-      {
-        filename: 'furniture-interior-showcase.jpg',
-        originalName: 'living-room-interior-sofa.jpg',
-        mimeType: 'image/jpeg',
-        size: 620500,
-        url: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc',
-        altText: 'Contemporary Scandinavian living room interior with green sofa',
-        caption: 'Scandinavian Living Space',
-        width: 2560,
-        height: 1440,
-      },
-      {
-        filename: 'furniture-walnut-credenza.jpg',
-        originalName: 'walnut-sideboard-credenza.jpg',
-        mimeType: 'image/jpeg',
-        size: 441000,
-        url: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2',
-        altText: 'Mid-century modern walnut credenza sideboard cabinet',
-        caption: 'Storage & Credenza Detail',
-        width: 2000,
-        height: 1333,
-      },
-      {
-        filename: 'furniture-fabric-swatch-linen.jpg',
-        originalName: 'ivory-linen-texture.jpg',
-        mimeType: 'image/jpeg',
-        size: 195000,
-        url: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7',
-        altText: 'Tactile natural ivory linen upholstery swatch texture',
-        caption: 'Ivory Linen Fabric Texture',
-        width: 1600,
-        height: 1600,
+        filename: 'placeholder.webp',
+        originalName: 'placeholder.webp',
+        mimeType: 'image/webp',
+        size: 11550,
+        url: PLACEHOLDER_IMAGE,
+        altText: 'تصویر نمونه / پیش‌فرض',
+        caption: 'تصویر جایگزین پیش‌فرض سیستم (Placeholder)',
+        width: 800,
+        height: 800,
       },
     ],
   });
 
-  console.log('🖼️ Media library assets seeded.');
+  console.log('🖼️ Media library assets seeded (Single physical placeholder.webp).');
 
   // 7. Promotional Coupons
-  const couponWelcome = await prisma.coupon.create({
-    data: {
-      code: 'WELCOME10',
-      description: '10% off your entire first handcrafted furniture order',
-      discountType: DiscountType.PERCENTAGE,
-      discountValue: 10,
-      minOrderAmount: 200,
-      maxDiscountAmount: 150,
-      usageLimit: 500,
-      usageCount: 14,
-      isActive: true,
-    },
-  });
+  let couponWelcome: any = null;
+  let couponWoodcraft: any = null;
+  let couponSolidWood: any = null;
+  let couponFreeShip: any = null;
 
-  const couponWoodcraft = await prisma.coupon.create({
-    data: {
-      code: 'WOODCRAFT15',
-      description: '15% seasonal discount on handcrafted living & dining furniture',
-      discountType: DiscountType.PERCENTAGE,
-      discountValue: 15,
-      minOrderAmount: 500,
-      maxDiscountAmount: 200,
-      usageLimit: 100,
-      usageCount: 32,
-      isActive: true,
-    },
-  });
+  if (isCouponsEnabled) {
+    couponWelcome = await prisma.coupon.create({
+      data: {
+        code: 'WELCOME10',
+        description: '10% off your entire first handcrafted furniture order',
+        discountType: DiscountType.PERCENTAGE,
+        discountValue: 10,
+        minOrderAmount: 200,
+        maxDiscountAmount: 150,
+        usageLimit: 500,
+        usageCount: 14,
+        isActive: true,
+      },
+    });
 
-  const couponSolidWood = await prisma.coupon.create({
-    data: {
-      code: 'SOLIDWOOD50',
-      description: '$50 flat discount on orders over $300',
-      discountType: DiscountType.FIXED_AMOUNT,
-      discountValue: 50,
-      minOrderAmount: 300,
-      usageLimit: 200,
-      usageCount: 45,
-      isActive: true,
-    },
-  });
+    couponWoodcraft = await prisma.coupon.create({
+      data: {
+        code: 'WOODCRAFT15',
+        description: '15% seasonal discount on handcrafted living & dining furniture',
+        discountType: DiscountType.PERCENTAGE,
+        discountValue: 15,
+        minOrderAmount: 500,
+        maxDiscountAmount: 200,
+        usageLimit: 100,
+        usageCount: 32,
+        isActive: true,
+      },
+    });
 
-  const couponFreeShip = await prisma.coupon.create({
-    data: {
-      code: 'FREESHIP',
-      description: 'Free white-glove freight delivery ($75 value)',
-      discountType: DiscountType.FIXED_AMOUNT,
-      discountValue: 75,
-      minOrderAmount: 400,
-      usageLimit: 50,
-      usageCount: 18,
-      isActive: true,
-    },
-  });
+    couponSolidWood = await prisma.coupon.create({
+      data: {
+        code: 'SOLIDWOOD50',
+        description: '$50 flat discount on orders over $300',
+        discountType: DiscountType.FIXED_AMOUNT,
+        discountValue: 50,
+        minOrderAmount: 300,
+        usageLimit: 200,
+        usageCount: 45,
+        isActive: true,
+      },
+    });
 
-  await prisma.coupon.create({
-    data: {
-      code: 'EXPIRED20',
-      description: 'Expired summer promotion 20% off',
-      discountType: DiscountType.PERCENTAGE,
-      discountValue: 20,
-      minOrderAmount: 100,
-      endDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
-      isActive: false,
-    },
-  });
+    couponFreeShip = await prisma.coupon.create({
+      data: {
+        code: 'FREESHIP',
+        description: 'Free white-glove freight delivery ($75 value)',
+        discountType: DiscountType.FIXED_AMOUNT,
+        discountValue: 75,
+        minOrderAmount: 400,
+        usageLimit: 50,
+        usageCount: 18,
+        isActive: true,
+      },
+    });
+
+    await prisma.coupon.create({
+      data: {
+        code: 'EXPIRED20',
+        description: 'Expired summer promotion 20% off',
+        discountType: DiscountType.PERCENTAGE,
+        discountValue: 20,
+        minOrderAmount: 100,
+        endDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+        isActive: false,
+      },
+    });
+    console.log('🏷️ Promotional coupons seeded.');
+  } else {
+    console.log('⏩ Coupons feature is disabled (FEATURE_COUPONS=false), skipping coupon seeding.');
+  }
 
   console.log('🏷️ Promotional Coupons seeded (WELCOME10, WOODCRAFT15, SOLIDWOOD50, FREESHIP, EXPIRED20).');
 
@@ -596,8 +643,8 @@ Unlike polyurethane plastic coatings that flake or yellow over time, hardwax oil
       taxAmount: 156.0,
       totalAmount: 2110.0,
       currency: 'USD',
-      couponId: couponWoodcraft.id,
-      couponCode: 'WOODCRAFT15',
+      couponId: couponWoodcraft?.id || null,
+      couponCode: couponWoodcraft ? 'WOODCRAFT15' : null,
       shippingAddress: {
         recipientName: 'Alexander Wright',
         phone: '+1 555-0245',
@@ -622,7 +669,7 @@ Unlike polyurethane plastic coatings that flake or yellow over time, hardwax oil
             productId: diningTable.id,
             productName: 'Aalborg Solid White Oak Dining Table (8-Seater)',
             productSku: 'SW-DT-001',
-            productImage: 'https://images.unsplash.com/photo-1530018607912-eff2daa1bac4',
+            productImage: PLACEHOLDER_IMAGE,
             unitPrice: 1099.0,
             quantity: 1,
             totalPrice: 1099.0,
@@ -634,7 +681,7 @@ Unlike polyurethane plastic coatings that flake or yellow over time, hardwax oil
             productName: 'Nordic Minimalist Lounge Armchair',
             productSku: walForVariant.sku,
             variantName: 'American Black Walnut / Forest Green Velvet',
-            productImage: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7',
+            productImage: PLACEHOLDER_IMAGE,
             unitPrice: 490.0,
             quantity: 2,
             totalPrice: 980.0,
@@ -688,8 +735,8 @@ Unlike polyurethane plastic coatings that flake or yellow over time, hardwax oil
       taxAmount: 30.24,
       totalAmount: 443.24,
       currency: 'USD',
-      couponId: couponWelcome.id,
-      couponCode: 'WELCOME10',
+      couponId: couponWelcome?.id || null,
+      couponCode: couponWelcome ? 'WELCOME10' : null,
       shippingAddress: {
         recipientName: 'Eleanor Vance',
         phone: '+1 555-0812',
@@ -714,7 +761,7 @@ Unlike polyurethane plastic coatings that flake or yellow over time, hardwax oil
             productName: 'Nordic Minimalist Lounge Armchair',
             productSku: oakIvoVariant.sku,
             variantName: 'Natural White Oak / Tactile Ivory Linen',
-            productImage: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c',
+            productImage: PLACEHOLDER_IMAGE,
             unitPrice: 420.0,
             quantity: 1,
             totalPrice: 420.0,
@@ -801,7 +848,7 @@ Unlike polyurethane plastic coatings that flake or yellow over time, hardwax oil
             productId: diningTable.id,
             productName: 'Aalborg Solid White Oak Dining Table (8-Seater)',
             productSku: 'SW-DT-001',
-            productImage: 'https://images.unsplash.com/photo-1530018607912-eff2daa1bac4',
+            productImage: PLACEHOLDER_IMAGE,
             unitPrice: 1099.0,
             quantity: 1,
             totalPrice: 1099.0,
@@ -874,7 +921,7 @@ Unlike polyurethane plastic coatings that flake or yellow over time, hardwax oil
             productName: 'Nordic Minimalist Lounge Armchair',
             productSku: walChaVariant.sku,
             variantName: 'American Black Walnut / Charcoal Grey',
-            productImage: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7',
+            productImage: PLACEHOLDER_IMAGE,
             unitPrice: 495.0,
             quantity: 2,
             totalPrice: 990.0,
@@ -945,7 +992,7 @@ Unlike polyurethane plastic coatings that flake or yellow over time, hardwax oil
             productName: 'Nordic Minimalist Lounge Armchair',
             productSku: oakForVariant.sku,
             variantName: 'Natural White Oak / Forest Green Velvet',
-            productImage: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c',
+            productImage: PLACEHOLDER_IMAGE,
             unitPrice: 480.0,
             quantity: 1,
             totalPrice: 480.0,
@@ -1008,8 +1055,8 @@ Unlike polyurethane plastic coatings that flake or yellow over time, hardwax oil
       taxAmount: 71.32,
       totalAmount: 962.82,
       currency: 'USD',
-      couponId: couponWoodcraft.id,
-      couponCode: 'WOODCRAFT15',
+      couponId: couponWoodcraft?.id || null,
+      couponCode: couponWoodcraft ? 'WOODCRAFT15' : null,
       shippingAddress: {
         recipientName: 'Eleanor Vance',
         phone: '+1 555-0812',
@@ -1034,7 +1081,7 @@ Unlike polyurethane plastic coatings that flake or yellow over time, hardwax oil
             productName: 'Nordic Minimalist Lounge Armchair',
             productSku: walIvoVariant.sku,
             variantName: 'American Black Walnut / Tactile Ivory Linen',
-            productImage: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7',
+            productImage: PLACEHOLDER_IMAGE,
             unitPrice: 495.0,
             quantity: 2,
             totalPrice: 990.0,

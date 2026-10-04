@@ -20,8 +20,10 @@ import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { Public } from '@/common/decorators/public.decorator';
 import { Role } from '@/common/enums/role.enum';
 import { ReferralStatus } from '@prisma/client';
+import { RequireFeature } from '@/common/decorators/require-feature.decorator';
 
 @ApiTags('Referral & Rewards')
+@RequireFeature('referral')
 @Controller('referrals')
 export class ReferralController {
   constructor(private readonly referralService: ReferralService) {}

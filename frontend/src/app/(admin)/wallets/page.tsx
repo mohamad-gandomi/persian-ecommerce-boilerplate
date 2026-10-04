@@ -29,6 +29,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { formatCurrency, formatDateTime } from '@/lib/utils';
 import { Wallet, WalletTransaction, WalletTransactionType } from '@/types';
 import { WalletsMobileList } from '@/components/admin/wallets/wallets-mobile-list';
+import { FeaturePageGuard } from '@/components/admin/feature-guard';
 
 export default function WalletsPage() {
   const queryClient = useQueryClient();
@@ -130,8 +131,9 @@ export default function WalletsPage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-screen bg-background font-sans" dir="rtl">
-      <Header title="مدیریت کیف پول‌ها" />
+    <FeaturePageGuard feature="wallet" featureTitle="کیف‌پول‌ها">
+      <div className="flex-1 flex flex-col min-h-screen bg-background font-sans" dir="rtl">
+        <Header title="مدیریت کیف پول‌ها" />
 
       <div className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full">
         {/* KPI Cards */}
@@ -580,5 +582,6 @@ export default function WalletsPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </FeaturePageGuard>
   );
 }

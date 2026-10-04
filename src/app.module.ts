@@ -16,6 +16,9 @@ import { OrdersModule } from '@/modules/orders/orders.module';
 import { WalletModule } from '@/modules/wallet/wallet.module';
 import { ReferralModule } from '@/modules/referral/referral.module';
 
+import { APP_GUARD } from '@nestjs/core';
+import { FeatureGuard } from '@/common/guards/feature.guard';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -37,5 +40,12 @@ import { ReferralModule } from '@/modules/referral/referral.module';
     WalletModule,
     ReferralModule,
   ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: FeatureGuard,
+    },
+  ],
 })
 export class AppModule {}
+
