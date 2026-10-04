@@ -25,6 +25,7 @@ export default () => ({
     referral: parseBool(process.env.FEATURE_REFERRAL, true),
     coupons: parseBool(process.env.FEATURE_COUPONS, true),
     attributes: parseBool(process.env.FEATURE_ATTRIBUTES, true),
+    flashDeals: parseBool(process.env.FEATURE_FLASH_DEALS, true),
   },
 });
 

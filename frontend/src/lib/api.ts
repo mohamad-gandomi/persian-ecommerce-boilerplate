@@ -21,6 +21,9 @@ import {
   ReferralCodeInfo,
   ReferralItem,
   FeaturesConfig,
+  FlashDeal,
+  FlashDealItem,
+  ActiveFlashDeal,
 } from '@/types';
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
@@ -773,6 +776,44 @@ export const api = {
     fetcher<ReferralSettings>('/referrals/admin/settings', {
       method: 'PATCH',
       body: JSON.stringify(data),
+    }),
+
+  // Flash Deals & Special Offers
+  getFlashDeals: (status?: 'all' | 'active' | 'upcoming' | 'expired') => {
+    const query = status && status !== 'all' ? `?status=${status}` : '';
+    return fetcher<FlashDeal[]>(`/flash-deals${query}`);
+  },
+
+  getFlashDeal: (id: string) => fetcher<FlashDeal>(`/flash-deals/${id}`),
+
+  getActiveFlashDeal: () => fetcher<ActiveFlashDeal | null>('/flash-deals/active'),
+
+  createFlashDeal: (data: any) =>
+    fetcher<FlashDeal>('/flash-deals', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateFlashDeal: (id: string, data: any) =>
+    fetcher<FlashDeal>(`/flash-deals/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+  deleteFlashDeal: (id: string) =>
+    fetcher<any>(`/flash-deals/${id}`, {
+      method: 'DELETE',
+    }),
+
+  addFlashDealItem: (dealId: string, data: any) =>
+    fetcher<FlashDealItem>(`/flash-deals/${dealId}/items`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  removeFlashDealItem: (dealId: string, productId: string) =>
+    fetcher<any>(`/flash-deals/${dealId}/items/${productId}`, {
+      method: 'DELETE',
     }),
 
   getFeatures: () =>

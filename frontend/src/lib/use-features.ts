@@ -10,6 +10,7 @@ export const DEFAULT_FEATURES: FeaturesConfig = {
   referral: true,
   coupons: true,
   attributes: true,
+  flashDeals: true,
 };
 
 export function useFeatures() {

@@ -13,6 +13,7 @@ import { FilterOrdersDto } from './dto/filter-orders.dto';
 import { OrderStatus, PaymentStatus, TransactionStatus, Role, WalletTransactionType } from '@prisma/client';
 import { WalletService } from '@/modules/wallet/wallet.service';
 import { ReferralService } from '@/modules/referral/referral.service';
+import { FlashDealsService } from '@/modules/flash-deals/flash-deals.service';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
@@ -23,6 +24,7 @@ export class OrdersService {
     private shippingService: ShippingService,
     private walletService: WalletService,
     private referralService: ReferralService,
+    private flashDealsService: FlashDealsService,
     private configService: ConfigService,
   ) {}
 
@@ -315,7 +317,16 @@ export class OrdersService {
           );
         }
 
-        const price = Number(variant.salePrice || variant.price);
+        // Check active flash deal for variant product
+        const flashDealInfo = await this.flashDealsService.checkActiveDealForProduct(variant.productId);
+        let price = Number(variant.salePrice || variant.price);
+        let cashbackPerUnit = 0;
+        if (flashDealInfo) {
+          price = flashDealInfo.specialPrice;
+          cashbackPerUnit = flashDealInfo.cashbackAmount;
+          await this.flashDealsService.recordFlashDealSale(flashDealInfo.dealItemId, itemInput.quantity);
+        }
+
         const lineTotal = Math.round(price * itemInput.quantity * 100) / 100;
         subtotal += lineTotal;
 
@@ -339,6 +350,7 @@ export class OrdersService {
           unitPrice: price,
           quantity: itemInput.quantity,
           totalPrice: lineTotal,
+          cashbackEarned: Math.round(cashbackPerUnit * itemInput.quantity * 100) / 100,
           selectedAttributes: selectedAttrs,
         });
 
@@ -365,7 +377,16 @@ export class OrdersService {
           );
         }
 
-        const price = Number(product.salePrice || product.basePrice);
+        // Check active flash deal for simple product
+        const flashDealInfo = await this.flashDealsService.checkActiveDealForProduct(product.id);
+        let price = Number(product.salePrice || product.basePrice);
+        let cashbackPerUnit = 0;
+        if (flashDealInfo) {
+          price = flashDealInfo.specialPrice;
+          cashbackPerUnit = flashDealInfo.cashbackAmount;
+          await this.flashDealsService.recordFlashDealSale(flashDealInfo.dealItemId, itemInput.quantity);
+        }
+
         const lineTotal = Math.round(price * itemInput.quantity * 100) / 100;
         subtotal += lineTotal;
 
@@ -381,6 +402,7 @@ export class OrdersService {
           unitPrice: price,
           quantity: itemInput.quantity,
           totalPrice: lineTotal,
+          cashbackEarned: Math.round(cashbackPerUnit * itemInput.quantity * 100) / 100,
           selectedAttributes: null,
         });
 
@@ -627,8 +649,37 @@ export class OrdersService {
       }
     }
 
-    // 2. Automatically refund wallet balance if order was cancelled or refunded
+    // 2. Award flash deal cashback when order is DELIVERED
     const isWalletEnabled = this.configService.get<boolean>('features.wallet', true);
+    if (newStatus === OrderStatus.DELIVERED && isWalletEnabled && order.userId) {
+      const totalCashback = order.items.reduce(
+        (acc, item) => acc + Number(item.cashbackEarned || 0),
+        0,
+      );
+      if (totalCashback > 0) {
+        const existingCashback = await this.prisma.walletTransaction.findFirst({
+          where: {
+            referenceId: `CB-${order.orderNumber}`,
+            type: WalletTransactionType.CASHBACK,
+          },
+        });
+        if (!existingCashback) {
+          try {
+            await this.walletService.credit({
+              userId: order.userId,
+              amount: totalCashback,
+              type: WalletTransactionType.CASHBACK,
+              description: `پاداش خرید فروش شگفت‌انگیز برای سفارش ${order.orderNumber}`,
+              referenceId: `CB-${order.orderNumber}`,
+            });
+          } catch (err) {
+            console.error('Failed to credit flash deal cashback for order', order.id, err);
+          }
+        }
+      }
+    }
+
+    // 3. Automatically refund wallet balance if order was cancelled or refunded
     if (
       (newStatus === OrderStatus.CANCELLED || newStatus === OrderStatus.REFUNDED) &&
       isWalletEnabled &&

@@ -12,6 +12,7 @@ import {
   Truck,
   Wallet,
   Gift,
+  Zap,
   Settings,
   type LucideIcon,
 } from 'lucide-react';
@@ -54,6 +55,12 @@ export const shopNavItems: NavItem[] = [
     href: '/coupons',
     icon: Tag,
     featureKey: 'coupons',
+  },
+  {
+    title: 'فروش شگفت‌انگیز',
+    href: '/flash-deals',
+    icon: Zap,
+    featureKey: 'flashDeals',
   },
   {
     title: 'محصولات',

@@ -8,6 +8,9 @@ import {
   PaymentStatus,
   TransactionStatus,
   DiscountType,
+  ReferralStatus,
+  RewardType,
+  WalletTransactionType,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import * as fs from 'fs';
@@ -34,18 +37,20 @@ async function ensurePlaceholderImage() {
 }
 
 async function main() {
-  console.log('🌱 Starting e-commerce database seed...');
+  console.log('🌱 Starting 100% Persian e-commerce database seed...');
   await ensurePlaceholderImage();
 
   // 1. Clean existing records in reverse dependency order
   await prisma.walletTransaction.deleteMany();
   await prisma.wallet.deleteMany();
-  await prisma.referral.deleteMany();
-  await prisma.referralCode.deleteMany();
   await prisma.orderTransaction.deleteMany();
   await prisma.orderTimeline.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
+  await prisma.referral.deleteMany();
+  await prisma.referralCode.deleteMany();
+  await prisma.flashDealItem.deleteMany();
+  await prisma.flashDeal.deleteMany();
   await prisma.coupon.deleteMany();
   await prisma.media.deleteMany();
   await prisma.variantAttributeValue.deleteMany();
@@ -63,44 +68,45 @@ async function main() {
 
   console.log('🧹 Cleaned previous data.');
 
-  // 2. Create Users (Admin & Customer)
+  // 2. Create Users (Admin, Referrer, Customers with Iranian details)
   const salt = await bcrypt.genSalt(10);
-  const adminPasswordHash = await bcrypt.hash('Admin@123456', salt);
+  const passwordHash = await bcrypt.hash('Admin@123456', salt);
   const customerPasswordHash = await bcrypt.hash('Customer@123456', salt);
 
   const admin = await prisma.user.create({
     data: {
       email: 'admin@store.local',
-      passwordHash: adminPasswordHash,
-      firstName: 'Store',
-      lastName: 'Admin',
-      phone: '+1 555-0199',
+      passwordHash,
+      firstName: 'مدیر',
+      lastName: 'کل سیستم',
+      phone: '09121111111',
       role: Role.ADMIN,
       nationalId: '0010350810',
       birthDate: new Date('1990-03-21T00:00:00.000Z'),
     },
   });
 
-  const customer = await prisma.user.create({
+  // کاربر معرف فعال
+  const referrerUser = await prisma.user.create({
     data: {
-      email: 'customer@store.local',
+      email: 'mohamad@example.com',
       passwordHash: customerPasswordHash,
-      firstName: 'Alexander',
-      lastName: 'Wright',
-      phone: '+1 555-0245',
+      firstName: 'محمد',
+      lastName: 'گندمی',
+      phone: '09122222222',
       role: Role.CUSTOMER,
       nationalId: '0499370856',
-      birthDate: new Date('1988-07-15T00:00:00.000Z'),
+      birthDate: new Date('1992-06-15T00:00:00.000Z'),
       addresses: {
         create: [
           {
-            title: 'Home Residence',
-            recipientName: 'Alexander Wright',
-            phone: '+1 555-0245',
-            street: '742 Evergreen Terrace',
-            city: 'Portland',
-            province: 'Oregon',
-            postalCode: '97201',
+            title: 'منزل و آتلیه',
+            recipientName: 'محمد گندمی',
+            phone: '09122222222',
+            street: 'تهران، سعادت‌آباد، میدان کاج، خیابان سرو غربی، پلاک ۱۲',
+            city: 'تهران',
+            province: 'تهران',
+            postalCode: '1998812345',
             isDefaultShipping: true,
             isDefaultBilling: true,
           },
@@ -109,26 +115,27 @@ async function main() {
     },
   });
 
-  const customer2 = await prisma.user.create({
+  // مشتری ۱ (معرفی‌شده توسط محمد گندمی)
+  const refereeCustomer1 = await prisma.user.create({
     data: {
-      email: 'eleanor.vance@example.com',
+      email: 'sara.rezaei@example.com',
       passwordHash: customerPasswordHash,
-      firstName: 'Eleanor',
-      lastName: 'Vance',
-      phone: '+1 555-0812',
+      firstName: 'سارا',
+      lastName: 'رضایی',
+      phone: '09123333333',
       role: Role.CUSTOMER,
       nationalId: '1270425897',
-      birthDate: new Date('1995-11-20T00:00:00.000Z'),
+      birthDate: new Date('1996-08-20T00:00:00.000Z'),
       addresses: {
         create: [
           {
-            title: 'Seattle Apartment',
-            recipientName: 'Eleanor Vance',
-            phone: '+1 555-0812',
-            street: '1204 Pine Street, Apt 5B',
-            city: 'Seattle',
-            province: 'Washington',
-            postalCode: '98101',
+            title: 'منزل تهران',
+            recipientName: 'سارا رضایی',
+            phone: '09123333333',
+            street: 'تهران، پاسداران، بوستان دوم، تقاطع پایدارفرد، پلاک ۱۴، واحد ۳',
+            city: 'تهران',
+            province: 'تهران',
+            postalCode: '1668744112',
             isDefaultShipping: true,
             isDefaultBilling: true,
           },
@@ -137,26 +144,27 @@ async function main() {
     },
   });
 
-  const customer3 = await prisma.user.create({
+  // مشتری ۲
+  const customer2 = await prisma.user.create({
     data: {
-      email: 'marcus.chen@example.com',
+      email: 'ali.hosseini@example.com',
       passwordHash: customerPasswordHash,
-      firstName: 'Marcus',
-      lastName: 'Chen',
-      phone: '+1 555-0934',
+      firstName: 'علی',
+      lastName: 'حسینی',
+      phone: '09124444444',
       role: Role.CUSTOMER,
       nationalId: '0082146901',
-      birthDate: new Date('2001-01-05T00:00:00.000Z'),
+      birthDate: new Date('1989-11-05T00:00:00.000Z'),
       addresses: {
         create: [
           {
-            title: 'Design Studio Loft',
-            recipientName: 'Marcus Chen',
-            phone: '+1 555-0934',
-            street: '550 NW 13th Ave',
-            city: 'Portland',
-            province: 'Oregon',
-            postalCode: '97209',
+            title: 'دفتر اصفهان',
+            recipientName: 'علی حسینی',
+            phone: '09124444444',
+            street: 'اصفهان، خیابان چهارباغ بالا، کوچه کاج، پلاک ۸، مجتمع پارسیان',
+            city: 'اصفهان',
+            province: 'اصفهان',
+            postalCode: '8164812345',
             isDefaultShipping: true,
             isDefaultBilling: true,
           },
@@ -165,21 +173,118 @@ async function main() {
     },
   });
 
-  console.log(`👤 Users seeded: Admin (${admin.email}), Customers (${customer.email}, ${customer2.email}, ${customer3.email})`);
+  // مشتری ۳
+  const customer3 = await prisma.user.create({
+    data: {
+      email: 'zahra.karimi@example.com',
+      passwordHash: customerPasswordHash,
+      firstName: 'زهرا',
+      lastName: 'کریمی',
+      phone: '09125555555',
+      role: Role.CUSTOMER,
+      nationalId: '0065432190',
+      birthDate: new Date('1994-02-12T00:00:00.000Z'),
+      addresses: {
+        create: [
+          {
+            title: 'منزل شیراز',
+            recipientName: 'زهرا کریمی',
+            phone: '09125555555',
+            street: 'شیراز، خیابان عفیف‌آباد، کوچه ۱۲، ساختمان مهر، پلاک ۲۲',
+            city: 'شیراز',
+            province: 'فارس',
+            postalCode: '7193612345',
+            isDefaultShipping: true,
+            isDefaultBilling: true,
+          },
+        ],
+      },
+    },
+  });
 
-  // Ensure default shipping methods exist
+  console.log(`👤 Iranian Users seeded: Admin, Referrer (${referrerUser.firstName} ${referrerUser.lastName}), and Customers.`);
+
+  // 3. Referral Program & Codes
+  const referralCode = await prisma.referralCode.create({
+    data: {
+      code: 'SHAD-MOHAMAD',
+      ownerId: referrerUser.id,
+      clickCount: 38,
+      successfulReferrals: 1,
+      totalEarned: 250000,
+      isActive: true,
+    },
+  });
+
+  // ثبت پیوند معرفی برای خرید سارا رضایی
+  const referralRelation = await prisma.referral.create({
+    data: {
+      referralCodeId: referralCode.id,
+      referrerId: referrerUser.id,
+      refereeId: refereeCustomer1.id,
+      status: ReferralStatus.COMPLETED,
+      rewardAmountReferrer: 250000, // ۲۵۰ هزار تومان پاداش معرفی
+      rewardAmountReferee: 50000, // ۵۰ هزار تومان پاداش هدیه خرید اول خریدار
+      rewardedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+    },
+  });
+
+  // کیف پول معرف و خریدار
+  await prisma.wallet.create({
+    data: {
+      userId: referrerUser.id,
+      balance: 250000,
+      currency: 'IRT',
+      transactions: {
+        create: [
+          {
+            amount: 250000,
+            balanceBefore: 0,
+            balanceAfter: 250000,
+            type: WalletTransactionType.REFERRAL_REWARD,
+            description: 'پاداش معرفی برای خرید سفارش SW-1001 توسط سارا رضایی',
+            referenceId: 'SW-1001',
+          },
+        ],
+      },
+    },
+  });
+
+  await prisma.wallet.create({
+    data: {
+      userId: refereeCustomer1.id,
+      balance: 50000,
+      currency: 'IRT',
+      transactions: {
+        create: [
+          {
+            amount: 50000,
+            balanceBefore: 0,
+            balanceAfter: 50000,
+            type: WalletTransactionType.REFERRAL_REWARD,
+            description: 'هدیه خرید اول با کد معرف SHAD-MOHAMAD برای سفارش SW-1001',
+            referenceId: 'SW-1001',
+          },
+        ],
+      },
+    },
+  });
+
+  console.log('🤝 Referral Code (SHAD-MOHAMAD), completed referral record, and matching Wallets seeded.');
+
+  // 4. Shipping Methods (روش‌های ارسال با واحد تومان)
   const shippingCount = await prisma.shippingMethod.count();
   if (shippingCount === 0) {
     await prisma.shippingMethod.createMany({
       data: [
         {
-          name: 'ارسال پیشتاز / استاندارد',
+          name: 'ارسال پیشتاز سراسری',
           type: 'FIXED',
-          price: 45000,
+          price: 65000,
           currency: 'IRT',
           carrier: 'شرکت ملی پست / تیپاکس',
           estimatedDays: '۲ الی ۴ روز کاری',
-          description: 'تحویل سریع مرسوله با رهگیری لحظه‌ای پیامکی و بسته‌بندی ایمن',
+          description: 'ارسال سریع به کلیه شهرهای کشور با کد رهگیری آنلاین و پیامکی',
           isActive: true,
           isDefault: true,
           displayOrder: 1,
@@ -187,56 +292,72 @@ async function main() {
         {
           name: 'ارسال اکسپرس فوری (تهران)',
           type: 'FIXED',
-          price: 85000,
+          price: 110000,
           currency: 'IRT',
-          carrier: 'پیک موتوری',
+          carrier: 'پیک ویژه اختصاصی',
           estimatedDays: 'کمتر از ۳ ساعت',
           description: 'تحویل سریع در همان روز ویژه سفارش‌های داخل شهر تهران',
           isActive: true,
           isDefault: false,
           displayOrder: 2,
         },
+        {
+          name: 'باربری اختصاصی مبلمان و دکوراسیون سنگین',
+          type: 'FIXED',
+          price: 350000,
+          currency: 'IRT',
+          carrier: 'باربری تخصصی مبلمان با پتوپیچ و بیمه سلامت بار',
+          estimatedDays: '۳ الی ۵ روز کاری',
+          description: 'حمل حرفه‌ای وسایل چوبی و مبلمان با بیمه کامل سلامت فیزیکی محصول تا درب منزل',
+          isActive: true,
+          isDefault: false,
+          displayOrder: 3,
+        },
       ],
     });
-    console.log('🚚 Default shipping methods initialized.');
+    console.log('🚚 Iranian shipping methods seeded.');
   }
 
-  // Ensure default system settings exist
+  // 5. System Settings
   await prisma.systemSetting.upsert({
     where: { key: 'store' },
     update: {},
     create: {
       key: 'store',
       value: {
-        name: 'فروشگاه اینترنتی',
-        email: 'info@store.local',
-        phone: '۰۲۱-۸۸۹۹۰۰۱۱',
-        address: 'تهران، خیابان ولیعصر',
+        name: 'صنایع چوب و دکوراسیون شادچوب',
+        email: 'info@shadwood.ir',
+        phone: '۰۲۱-۸۸۲۲۳۳۴۴',
+        address: 'تهران، خیابان ولیعصر، نرسیده به میدان ونک، پلاک ۱۸۴',
         currency: 'IRT',
       },
     },
   });
 
   await prisma.systemSetting.upsert({
-    where: { key: 'media' },
+    where: { key: 'referral_settings' },
     update: {},
     create: {
-      key: 'media',
+      key: 'referral_settings',
       value: {
-        convertToWebp: true,
-        qualityPreset: 80,
-        maxWidthOption: 2048,
-        showOptimizationOptions: false,
+        enabled: true,
+        enableGlobalReward: true,
+        defaultRewardType: 'PERCENTAGE',
+        defaultReferrerValue: 5,
+        defaultRefereeValue: 50000,
+        minOrderAmount: 200000,
+        releaseOnStatus: 'DELIVERED',
+        cookieDays: 30,
       },
     },
   });
 
-  // 3. Hierarchical Categories for Furniture
+  // 6. Hierarchical Categories (دسته‌بندی‌های اصیل مبلمان و صنایع چوب)
   const livingRoom = await prisma.category.create({
     data: {
-      name: 'Living Room',
+      name: 'اتاق نشیمن و پذیرایی',
       slug: 'living-room',
-      description: 'Handcrafted sofas, lounge chairs, and coffee tables built for elegance and comfort.',
+      description: 'مبلمان راحتی، کاناپه‌های مدرن و میزهای جلو مبلی ساخته‌شده از چوب طبیعی.',
       image: PLACEHOLDER_IMAGE,
       displayOrder: 1,
     },
@@ -244,19 +365,29 @@ async function main() {
 
   const sofasCategory = await prisma.category.create({
     data: {
-      name: 'Sofas & Armchairs',
+      name: 'مبلمان و صندلی راحتی',
       slug: 'sofas-and-armchairs',
-      description: 'Custom upholstered seating and accent armchairs.',
+      description: 'انواع مبل‌های تک‌نفره و چندنفره با اسکلت چوب راش و رویه‌کوبی درجه یک.',
       parentId: livingRoom.id,
       displayOrder: 1,
     },
   });
 
+  const coffeeTablesCategory = await prisma.category.create({
+    data: {
+      name: 'میز جلو مبلی و عسلی',
+      slug: 'coffee-tables',
+      description: 'میزهای روستیک و مینیمال چوب گردو و بلوط با روکش ضدآب و روغن گیاهی.',
+      parentId: livingRoom.id,
+      displayOrder: 2,
+    },
+  });
+
   const diningRoom = await prisma.category.create({
     data: {
-      name: 'Dining Room',
+      name: 'سرویس غذاخوری',
       slug: 'dining-room',
-      description: 'Solid wood dining tables, benches, and ergonomic dining chairs.',
+      description: 'میزهای ناهارخوری تمام چوب، نیمکت‌های ارگونومیک و صندلی‌های ناهارخوری.',
       image: PLACEHOLDER_IMAGE,
       displayOrder: 2,
     },
@@ -264,26 +395,46 @@ async function main() {
 
   const diningTablesCategory = await prisma.category.create({
     data: {
-      name: 'Dining Tables',
+      name: 'میز ناهارخوری',
       slug: 'dining-tables',
-      description: 'Hand-finished hardwood dining tables designed to last generations.',
+      description: 'میزهای ناهارخوری دست‌ساز از چوب راش و گردو با ضمانت استحکام مادام‌العمر.',
       parentId: diningRoom.id,
       displayOrder: 1,
     },
   });
 
-  console.log('🛋️ Categories seeded (Hierarchical).');
+  const diningChairsCategory = await prisma.category.create({
+    data: {
+      name: 'صندلی غذاخوری',
+      slug: 'dining-chairs',
+      description: 'صندلی‌های چوبی استاندارد با ارگونومی بالا و نشیمن فوق‌العاده راحت.',
+      parentId: diningRoom.id,
+      displayOrder: 2,
+    },
+  });
 
-  // 4. Attributes & Values (WooCommerce Style)
+  const decorCategory = await prisma.category.create({
+    data: {
+      name: 'دکوراسیون و کنسول چوبی',
+      slug: 'wooden-decor',
+      description: 'کنسول، دراور، آینه‌های روستیک و قفسه‌های کتابخانه چوب طبیعی.',
+      image: PLACEHOLDER_IMAGE,
+      displayOrder: 3,
+    },
+  });
+
+  console.log('🛋️ Categories seeded in Persian.');
+
+  // 7. Global Attributes & Terms
   const woodFinishAttr = await prisma.attribute.create({
     data: {
-      name: 'Wood Finish',
+      name: 'نوع و پوشش چوب',
       slug: 'wood-finish',
       values: {
         create: [
-          { name: 'Solid American Walnut', value: 'walnut', colorHex: '#5C4033' },
-          { name: 'Natural White Oak', value: 'natural-oak', colorHex: '#C8AD7F' },
-          { name: 'Smoked Teak', value: 'smoked-teak', colorHex: '#3D2817' },
+          { name: 'چوب گردوی تیره طبیعی', value: 'walnut', colorHex: '#4A2E1B' },
+          { name: 'چوب راش طبیعی گرجستان', value: 'beech', colorHex: '#D4A373' },
+          { name: 'چوب بلوط ارگانیک دودی', value: 'smoked-oak', colorHex: '#6F4E37' },
         ],
       },
     },
@@ -292,64 +443,58 @@ async function main() {
 
   const fabricColorAttr = await prisma.attribute.create({
     data: {
-      name: 'Fabric Color',
+      name: 'رنگ و جنس پارچه',
       slug: 'fabric-color',
       values: {
         create: [
-          { name: 'Forest Velvet', value: 'forest-velvet', colorHex: '#1E3F20' },
-          { name: 'Ivory Linen', value: 'ivory-linen', colorHex: '#F5F2EB' },
-          { name: 'Charcoal Grey', value: 'charcoal-grey', colorHex: '#36454F' },
+          { name: 'مخمل سبز زمردی', value: 'forest-velvet', colorHex: '#1B4332' },
+          { name: 'کتان کرم عاجی', value: 'ivory-linen', colorHex: '#F3EFE0' },
+          { name: 'طوسی ذغالی مدرن', value: 'charcoal-grey', colorHex: '#333533' },
         ],
       },
     },
     include: { values: true },
   });
 
-  const materialAttr = await prisma.attribute.create({
-    data: {
-      name: 'Material & Joinery',
-      slug: 'material-and-joinery',
-      values: {
-        create: [
-          { name: 'Solid European White Oak', value: 'solid-oak', colorHex: '#C8AD7F' },
-          { name: 'Solid American Black Walnut', value: 'solid-walnut', colorHex: '#5C4033' },
-          { name: 'Danish Kiln-Dried Teak', value: 'danish-teak', colorHex: '#8B5A2B' },
-        ],
-      },
-    },
-    include: { values: true },
-  });
+  console.log('🎨 Attributes seeded in Persian.');
 
-  console.log('🎨 Global Attributes & Values seeded.');
+  // Map values for easy lookup
+  const valMap: Record<string, string> = {};
+  for (const v of [...woodFinishAttr.values, ...fabricColorAttr.values]) {
+    valMap[v.value] = v.id;
+  }
 
-  // 5. Products
-  // A. Variable Product: Nordic Lounge Armchair
+  // 8. Products (100% Persian with realistic Toman prices & Referral Rewards)
+  // کالا ۱: محصول متغیر - مبل راحتی تک‌نفره مینیمال
   const variableArmchair = await prisma.product.create({
     data: {
-      name: 'Nordic Minimalist Lounge Armchair',
+      name: 'مبل راحتی تک‌نفره مینیمال شادچوب',
       slug: 'nordic-minimalist-lounge-armchair',
       sku: 'SW-ARMCHAIR-01',
       productType: ProductType.VARIABLE,
       description:
-        'A sculptured Danish-modern lounge chair celebrating clean lines, organic curves, and heirloom-grade joinery. Built from kiln-dried hardwood with premium velvet or breathable linen upholstery.',
-      shortDescription: 'Modern Scandinavian armchair with customizable hardwood frame and upholstery.',
-      basePrice: 450.0,
-      dimensions: '82x86x78 cm',
+        'مبل راحتی تک‌نفره شادچوب، حاصل تلفیق ظرافت معماری مینیمال و اتصالات سنتی نجاری ایرانی. اسکلت اصلی از چوب سخت کوره رفته ساخته شده و با پوشش روغن گیاهی مونوکوت محافظت می‌شود. این مبل با نشیمن فوم سرد ۳۵ کیلویی ویژه و پارچه‌های تنفس‌پذیر ترک، نهایت آرامش را به فضای خانه شما هدیه می‌دهد.',
+      shortDescription: 'صندلی راحتی دست‌ساز با اسکلت تمام چوب طبیعی و پارچه کتان یا مخمل درجه یک.',
+      basePrice: 8500000, // ۸ میلیون و ۵۰۰ هزار تومان
+      dimensions: '۸۲×۸۶×۷۸ سانتی‌متر',
       weight: 18.5,
       featured: true,
+      rewardType: RewardType.FIXED,
+      referrerRewardValue: 150000, // ۱۵۰ هزار تومان پاداش معرفی
+      refereeRewardValue: 50000, // ۵۰ هزار تومان پاداش خرید اول
       status: ProductStatus.PUBLISHED,
       categoryId: sofasCategory.id,
       images: {
         create: [
           {
             url: PLACEHOLDER_IMAGE,
-            altText: 'Nordic Minimalist Lounge Armchair Front View',
+            altText: 'نمای روبروی مبل راحتی تک‌نفره چوبی شادچوب',
             isPrimary: true,
             displayOrder: 1,
           },
           {
             url: PLACEHOLDER_IMAGE,
-            altText: 'Nordic Minimalist Lounge Armchair Profile Angle',
+            altText: 'نمای جانبی مبل راحتی با چوب گردوی تیره',
             isPrimary: false,
             displayOrder: 2,
           },
@@ -364,66 +509,18 @@ async function main() {
     },
   });
 
-  // Map values for easy lookup
-  const valMap: Record<string, string> = {};
-  for (const v of [...woodFinishAttr.values, ...fabricColorAttr.values]) {
-    valMap[v.value] = v.id;
-  }
-
-  // Create Variations for Armchair (e.g., combinations of finish & fabric)
-  const variantsData = [
-    {
-      sku: 'SW-ARM-WAL-FOR',
-      price: 530.0,
-      salePrice: 490.0,
-      stock: 8,
-      finish: 'walnut',
-      fabric: 'forest-velvet',
-    },
-    {
-      sku: 'SW-ARM-WAL-IVO',
-      price: 495.0,
-      salePrice: null,
-      stock: 14,
-      finish: 'walnut',
-      fabric: 'ivory-linen',
-    },
-    {
-      sku: 'SW-ARM-WAL-CHA',
-      price: 495.0,
-      salePrice: null,
-      stock: 9,
-      finish: 'walnut',
-      fabric: 'charcoal-grey',
-    },
-    {
-      sku: 'SW-ARM-OAK-FOR',
-      price: 480.0,
-      salePrice: null,
-      stock: 15,
-      finish: 'natural-oak',
-      fabric: 'forest-velvet',
-    },
-    {
-      sku: 'SW-ARM-OAK-IVO',
-      price: 450.0,
-      salePrice: 420.0,
-      stock: 22,
-      finish: 'natural-oak',
-      fabric: 'ivory-linen',
-    },
-    {
-      sku: 'SW-ARM-OAK-CHA',
-      price: 450.0,
-      salePrice: null,
-      stock: 11,
-      finish: 'natural-oak',
-      fabric: 'charcoal-grey',
-    },
+  // تنوع‌های مبل راحتی
+  const armchairVariants = [
+    { sku: 'SW-ARM-WAL-FOR', price: 9200000, salePrice: 8800000, stock: 8, finish: 'walnut', fabric: 'forest-velvet' },
+    { sku: 'SW-ARM-WAL-IVO', price: 8900000, salePrice: null, stock: 12, finish: 'walnut', fabric: 'ivory-linen' },
+    { sku: 'SW-ARM-WAL-CHA', price: 8900000, salePrice: null, stock: 9, finish: 'walnut', fabric: 'charcoal-grey' },
+    { sku: 'SW-ARM-BEE-FOR', price: 8500000, salePrice: null, stock: 15, finish: 'beech', fabric: 'forest-velvet' },
+    { sku: 'SW-ARM-BEE-IVO', price: 8200000, salePrice: 7900000, stock: 20, finish: 'beech', fabric: 'ivory-linen' },
+    { sku: 'SW-ARM-BEE-CHA', price: 8200000, salePrice: null, stock: 10, finish: 'beech', fabric: 'charcoal-grey' },
   ];
 
-  const createdVariants: any[] = [];
-  for (const item of variantsData) {
+  const createdArmchairVariants: any[] = [];
+  for (const item of armchairVariants) {
     const v = await prisma.productVariant.create({
       data: {
         productId: variableArmchair.id,
@@ -432,7 +529,7 @@ async function main() {
         salePrice: item.salePrice,
         stockQuantity: item.stock,
         weight: 18.5,
-        dimensions: '82x86x78 cm',
+        dimensions: '۸۲×۸۶×۷۸ سانتی‌متر',
         attributeValues: {
           create: [
             { attributeValueId: valMap[item.finish] },
@@ -441,32 +538,75 @@ async function main() {
         },
       },
     });
-    createdVariants.push({ ...v, finish: item.finish, fabric: item.fabric });
+    createdArmchairVariants.push({ ...v, finish: item.finish, fabric: item.fabric });
   }
 
-  // B. Simple Product: Solid Oak Dining Table
+  // کالا ۲: محصول ساده - میز ناهارخوری ۸ نفره چوب راش مدل آلبورگ
   const diningTable = await prisma.product.create({
     data: {
-      name: 'Aalborg Solid White Oak Dining Table (8-Seater)',
-      slug: 'aalborg-solid-white-oak-dining-table',
+      name: 'میز ناهارخوری ۸ نفره چوب راش مدل آلبورگ',
+      slug: 'aalborg-solid-beech-dining-table',
       sku: 'SW-DT-001',
       productType: ProductType.SIMPLE,
       description:
-        'Crafted from selected European White Oak planks with a natural low-sheen hardwax oil finish. Seats 8-10 comfortably with chamfered edge profiling and interlocking trestle joinery.',
-      shortDescription: 'Generous 8-10 person dining table handcrafted from solid European White Oak.',
-      basePrice: 1250.0,
-      salePrice: 1099.0,
-      stockQuantity: 7,
-      dimensions: '240x100x76 cm',
-      weight: 72.0,
+        'میز ناهارخوری ۸ نفره آلبورگ از چوب یکپارچه راش گرجستان ساخته شده است. این میز با طراحی ارگانیک لبه‌ها و پایه‌های مخروطی تراش‌خورده، اصالت طبیعت را به اتاق غذاخوری شما می‌آورد. صفحه میز با روغن گیاهی ضدآب و ضدلک محافظت شده که در برابر مایعات گرم و خراشیدگی‌های روزمره کاملاً مقاوم است.',
+      shortDescription: 'میز ناهارخوری هشت‌نفره مستطیلی ساخته‌شده از اسلب چوب راش سوپر گرجستان.',
+      basePrice: 18500000, // ۱۸ میلیون و ۵۰۰ هزار تومان
+      salePrice: 16800000, // قیمت حراج ۱۶ میلیون و ۸۰۰ هزار تومان
+      stockQuantity: 14,
+      dimensions: '۲۰۰×۱۰۰×۷۶ سانتی‌متر',
+      weight: 58.0,
       featured: true,
+      rewardType: RewardType.FIXED,
+      referrerRewardValue: 250000, // ۲۵۰ هزار تومان پاداش معرفی
+      refereeRewardValue: 50000, // ۵۰ هزار تومان پاداش خریدار
       status: ProductStatus.PUBLISHED,
       categoryId: diningTablesCategory.id,
       images: {
         create: [
           {
             url: PLACEHOLDER_IMAGE,
-            altText: 'Aalborg Solid White Oak Dining Table',
+            altText: 'نمای پرسپکتیو میز ناهارخوری ۸ نفره چوب راش آلبورگ',
+            isPrimary: true,
+            displayOrder: 1,
+          },
+          {
+            url: PLACEHOLDER_IMAGE,
+            altText: 'جزئیات رگه‌ها و گره‌های طبیعی چوب صفحه میز',
+            isPrimary: false,
+            displayOrder: 2,
+          },
+        ],
+      },
+    },
+  });
+
+  // کالا ۳: محصول ساده - میز جلو مبلی روستیک چوب گردو
+  const coffeeTable = await prisma.product.create({
+    data: {
+      name: 'میز جلو مبلی روستیک چوب گردوی تیره',
+      slug: 'rustic-solid-walnut-coffee-table',
+      sku: 'SW-CT-001',
+      productType: ProductType.SIMPLE,
+      description:
+        'میز جلو مبلی مدل روستیک با سطح منحنی و الهام‌گرفته از جریان رودخانه. تلفیق بافت چوب گردوی کوهستانی با پایه‌های فلزی مشکی مات، هماهنگی فوق‌العاده‌ای میان سبک مدرن و روستیک ایجاد کرده است.',
+      shortDescription: 'میز جلو مبلی بیضی شکل تمام چوب گردو با پوشش نانو ضدآب و پایه‌های مشکی کوره.',
+      basePrice: 4900000, // ۴ میلیون و ۹۰۰ هزار تومان
+      salePrice: 4500000, // ۴ میلیون و ۵۰۰ هزار تومان
+      stockQuantity: 22,
+      dimensions: '۱۱۰×۶۰×۴۵ سانتی‌متر',
+      weight: 14.0,
+      featured: true,
+      rewardType: RewardType.FIXED,
+      referrerRewardValue: 120000,
+      refereeRewardValue: 40000,
+      status: ProductStatus.PUBLISHED,
+      categoryId: coffeeTablesCategory.id,
+      images: {
+        create: [
+          {
+            url: PLACEHOLDER_IMAGE,
+            altText: 'میز جلو مبلی روستیک چوب گردو در فضای نشیمن مدرن',
             isPrimary: true,
             displayOrder: 1,
           },
@@ -475,256 +615,265 @@ async function main() {
     },
   });
 
-  console.log('📦 Products seeded (Variable & Simple).');
-
-  const isBlogEnabled = process.env.FEATURE_BLOG !== 'false';
-  const isCouponsEnabled = process.env.FEATURE_COUPONS !== 'false';
-
-  // 6. Blog Section
-  if (isBlogEnabled) {
-    const blogCategory = await prisma.blogCategory.create({
-      data: {
-        name: 'Woodcraft & Design Guides',
-        slug: 'woodcraft-and-design-guides',
-        description: 'Expert advice on woodworking, interior styling, and furniture longevity.',
+  // کالا ۴: محصول ساده - صندلی غذاخوری ارگونومیک مدل پینار
+  const diningChair = await prisma.product.create({
+    data: {
+      name: 'صندلی ناهارخوری ارگونومیک چوب راش مدل پینار',
+      slug: 'pinar-ergonomic-beech-dining-chair',
+      sku: 'SW-DC-001',
+      productType: ProductType.SIMPLE,
+      description:
+        'صندلی ناهارخوری پینار با تکیه‌گاه قوس‌دار ارگونومیک، تکیه‌گاه ستون فقرات را در نشستن‌های طولانی حفظ می‌کند. ساختار پایه‌ها کاملاً یکپارچه و فاق و زبانه‌ای اجرا شده است.',
+      shortDescription: 'صندلی ناهارخوری چوبی خوش‌نشین با پوشش روغن گیاهی و اتصالات تمام چوب.',
+      basePrice: 2400000, // ۲ میلیون و ۴۰۰ هزار تومان
+      salePrice: null,
+      stockQuantity: 40,
+      dimensions: '۵۰×۵۴×۸۲ سانتی‌متر',
+      weight: 6.5,
+      featured: false,
+      rewardType: RewardType.FIXED,
+      referrerRewardValue: 60000,
+      refereeRewardValue: 20000,
+      status: ProductStatus.PUBLISHED,
+      categoryId: diningChairsCategory.id,
+      images: {
+        create: [
+          {
+            url: PLACEHOLDER_IMAGE,
+            altText: 'صندلی ناهارخوری ارگونومیک چوب راش پینار',
+            isPrimary: true,
+            displayOrder: 1,
+          },
+        ],
       },
-    });
-
-    await prisma.blogPost.create({
-      data: {
-        title: 'The Art of Hardwood Joinery: Why Solid Oak & Walnut Endure for Decades',
-        slug: 'the-art-of-hardwood-joinery-why-solid-oak-walnut-endure',
-        excerpt:
-          'Discover the difference between commercial veneer furniture and generational mortise-and-tenon craftsmanship.',
-        content: `
-# The Enduring Value of Hardwood Furniture
-
-When investing in furniture for your home, understanding construction techniques transforms the way you view everyday pieces.
-
-## 1. Kiln-Dried Hardwoods vs. Engineered Particle Boards
-Kiln drying stabilizes the moisture content in natural timber to between 6% and 8%, preventing warping, bowing, or seasonal splitting when climate control conditions fluctuate in your home.
-
-## 2. Mortise and Tenon Joinery
-Traditional interlocking joinery disperses mechanical loads across interlocking wood fibers rather than relying solely on metallic fasteners or glue seams.
-
-## 3. Natural Oil and Hardwax Finishes
-Unlike polyurethane plastic coatings that flake or yellow over time, hardwax oils penetrate into the pores of oak and walnut, preserving tactile wood grains and allowing effortless spot repairs without strip-sanding the whole piece.
-        `,
-        featuredImage: PLACEHOLDER_IMAGE,
-        status: PostStatus.PUBLISHED,
-        authorId: admin.id,
-        categoryId: blogCategory.id,
-        publishedAt: new Date(),
-      },
-    });
-
-    console.log('✍️ Blog posts and categories seeded.');
-  } else {
-    console.log('⏩ Blog feature is disabled (FEATURE_BLOG=false), skipping blog seeding.');
-  }
-
-  // 6. Media Library Assets (Real physical placeholder file)
-  await prisma.media.createMany({
-    data: [
-      {
-        filename: 'placeholder.webp',
-        originalName: 'placeholder.webp',
-        mimeType: 'image/webp',
-        size: 11550,
-        url: PLACEHOLDER_IMAGE,
-        altText: 'تصویر نمونه / پیش‌فرض',
-        caption: 'تصویر جایگزین پیش‌فرض سیستم (Placeholder)',
-        width: 800,
-        height: 800,
-      },
-    ],
+    },
   });
 
-  console.log('🖼️ Media library assets seeded (Single physical placeholder.webp).');
+  // کالا ۵: محصول ساده - کنسول ۳ درب مدرن چوب بلوط
+  const consoleTable = await prisma.product.create({
+    data: {
+      name: 'کنسول ۳ درب مدرن چوب بلوط دودی',
+      slug: 'modern-smoked-oak-sideboard-console',
+      sku: 'SW-CN-001',
+      productType: ProductType.SIMPLE,
+      description:
+        'میز کنسول مدرن با ۳ درب فشاری آرام‌بند و پایه‌های چوبی ظریف. فضای داخلی کنسول دارای طبقات متحرک بوده و برای ساماندهی ظروف پذیرایی، کتاب یا اکسسوری‌ها ایده‌آل است.',
+      shortDescription: 'کنسول لوکس ۳ درب ساخته‌شده از چوب بلوط طبیعی با یراق‌آلات آرام‌بند بلوم اتریش.',
+      basePrice: 12800000, // ۱۲ میلیون و ۸۰۰ هزار تومان
+      salePrice: 11900000, // ۱۱ میلیون و ۹۰۰ هزار تومان
+      stockQuantity: 6,
+      dimensions: '۱۶۰×۴۵×۸۵ سانتی‌متر',
+      weight: 42.0,
+      featured: true,
+      rewardType: RewardType.FIXED,
+      referrerRewardValue: 250000,
+      refereeRewardValue: 50000,
+      status: ProductStatus.PUBLISHED,
+      categoryId: decorCategory.id,
+      images: {
+        create: [
+          {
+            url: PLACEHOLDER_IMAGE,
+            altText: 'کنسول ۳ درب چوب بلوط دودی شادچوب',
+            isPrimary: true,
+            displayOrder: 1,
+          },
+        ],
+      },
+    },
+  });
 
-  // 7. Promotional Coupons
+  console.log('📦 5 Authentic Persian Products created.');
+
+  // 9. Promotional Coupons
+  const isCouponsEnabled = process.env.FEATURE_COUPONS !== 'false';
+  let couponNoorooz: any = null;
   let couponWelcome: any = null;
-  let couponWoodcraft: any = null;
-  let couponSolidWood: any = null;
-  let couponFreeShip: any = null;
 
   if (isCouponsEnabled) {
-    couponWelcome = await prisma.coupon.create({
+    couponNoorooz = await prisma.coupon.create({
       data: {
-        code: 'WELCOME10',
-        description: '10% off your entire first handcrafted furniture order',
-        discountType: DiscountType.PERCENTAGE,
-        discountValue: 10,
-        minOrderAmount: 200,
-        maxDiscountAmount: 150,
-        usageLimit: 500,
+        code: 'NOOROOZ',
+        description: 'کد تخفیف ویژه بهاره — ۵۰۰,۰۰۰ تومان تخفیف برای سفارش‌های بالای ۵ میلیون تومان',
+        discountType: DiscountType.FIXED_AMOUNT,
+        discountValue: 500000,
+        minOrderAmount: 5000000,
+        usageLimit: 100,
         usageCount: 14,
         isActive: true,
       },
     });
 
-    couponWoodcraft = await prisma.coupon.create({
+    couponWelcome = await prisma.coupon.create({
       data: {
-        code: 'WOODCRAFT15',
-        description: '15% seasonal discount on handcrafted living & dining furniture',
+        code: 'WELCOME10',
+        description: 'تخفیف ۱۰ درصدی اولین خرید مشتریان جدید',
         discountType: DiscountType.PERCENTAGE,
-        discountValue: 15,
-        minOrderAmount: 500,
-        maxDiscountAmount: 200,
-        usageLimit: 100,
-        usageCount: 32,
-        isActive: true,
-      },
-    });
-
-    couponSolidWood = await prisma.coupon.create({
-      data: {
-        code: 'SOLIDWOOD50',
-        description: '$50 flat discount on orders over $300',
-        discountType: DiscountType.FIXED_AMOUNT,
-        discountValue: 50,
-        minOrderAmount: 300,
+        discountValue: 10,
+        minOrderAmount: 1000000,
+        maxDiscountAmount: 1000000,
         usageLimit: 200,
-        usageCount: 45,
-        isActive: true,
-      },
-    });
-
-    couponFreeShip = await prisma.coupon.create({
-      data: {
-        code: 'FREESHIP',
-        description: 'Free white-glove freight delivery ($75 value)',
-        discountType: DiscountType.FIXED_AMOUNT,
-        discountValue: 75,
-        minOrderAmount: 400,
-        usageLimit: 50,
-        usageCount: 18,
+        usageCount: 28,
         isActive: true,
       },
     });
 
     await prisma.coupon.create({
       data: {
-        code: 'EXPIRED20',
-        description: 'Expired summer promotion 20% off',
-        discountType: DiscountType.PERCENTAGE,
-        discountValue: 20,
-        minOrderAmount: 100,
-        endDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
-        isActive: false,
+        code: 'FREESHIP',
+        description: 'کد ارسال رایگان برای سفارش‌های سراسر کشور',
+        discountType: DiscountType.FIXED_AMOUNT,
+        discountValue: 65000,
+        minOrderAmount: 3000000,
+        usageLimit: 150,
+        usageCount: 42,
+        isActive: true,
       },
     });
-    console.log('🏷️ Promotional coupons seeded.');
-  } else {
-    console.log('⏩ Coupons feature is disabled (FEATURE_COUPONS=false), skipping coupon seeding.');
+    console.log('🏷️ Persian Coupons seeded (NOOROOZ, WELCOME10, FREESHIP).');
   }
 
-  console.log('🏷️ Promotional Coupons seeded (WELCOME10, WOODCRAFT15, SOLIDWOOD50, FREESHIP, EXPIRED20).');
+  // 10. Flash Deals (فروش‌های شگفت‌انگیز با پاداش معرف و پاداش خریدار هماهنگ)
+  const isFlashDealsEnabled = process.env.FEATURE_FLASH_DEALS !== 'false';
+  if (isFlashDealsEnabled) {
+    const flashDeal = await prisma.flashDeal.create({
+      data: {
+        title: 'تخفیف شگفت‌انگیز پایان هفته',
+        slug: 'weekend-flash-deal',
+        description: 'تا پایان زمان، فرصت خرید با پاداش بیشتر داری.',
+        badgeText: 'فروش ویژه',
+        startDate: new Date(Date.now() - 2 * 60 * 60 * 1000), // ۲ ساعت پیش (در حال برگزاری)
+        endDate: new Date(Date.now() + 10 * 60 * 60 * 1000), // ۱۰ ساعت آینده
+        isActive: true,
+        defaultCashback: 120000, // ۱۲۰ هزار تومان پاداش خرید پیش‌فرض
+        defaultReferrerReward: 150000, // ۱۵۰ هزار تومان پاداش معرف پیش‌فرض
+        items: {
+          create: [
+            {
+              productId: coffeeTable.id,
+              discountType: DiscountType.PERCENTAGE,
+              discountValue: 14,
+              specialPrice: 4200000, // قیمت شگفت‌انگیز ۴ میلیون و ۲۰۰ هزار تومان
+              cashbackAmount: 120000, // ۱۲۰ هزار تومان پاداش خرید
+              referrerReward: 180000, // ۱۸۰ هزار تومان پاداش معرف
+              stockLimit: 30,
+              soldCount: 8,
+            },
+            {
+              productId: variableArmchair.id,
+              discountType: DiscountType.PERCENTAGE,
+              discountValue: 15,
+              specialPrice: 7200000, // قیمت شگفت‌انگیز ۷ میلیون و ۲۰۰ هزار تومان
+              cashbackAmount: 150000, // ۱۵۰ هزار تومان پاداش خرید
+              referrerReward: 250000, // ۲۵۰ هزار تومان پاداش معرف
+              stockLimit: 20,
+              soldCount: 6,
+            },
+          ],
+        },
+      },
+    });
+    console.log(`⚡ Flash Deal seeded: "${flashDeal.title}" with 2 products.`);
+  }
 
-  // 8. Orders, Order Items, and Timelines
+  // 11. Orders & Coordinated Transactions (هماهنگ با معرف و کیف پول)
   const daysAgo = (days: number) => new Date(Date.now() - days * 24 * 60 * 60 * 1000);
   const hoursAgo = (hours: number) => new Date(Date.now() - hours * 60 * 60 * 1000);
 
-  // Variant helper lookups
-  const walForVariant = createdVariants.find((v) => v.sku === 'SW-ARM-WAL-FOR') || createdVariants[0];
-  const oakIvoVariant = createdVariants.find((v) => v.sku === 'SW-ARM-OAK-IVO') || createdVariants[4];
-  const walChaVariant = createdVariants.find((v) => v.sku === 'SW-ARM-WAL-CHA') || createdVariants[2];
-  const oakForVariant = createdVariants.find((v) => v.sku === 'SW-ARM-OAK-FOR') || createdVariants[3];
-  const walIvoVariant = createdVariants.find((v) => v.sku === 'SW-ARM-WAL-IVO') || createdVariants[1];
+  const beechIvoryVariant = createdArmchairVariants.find((v) => v.sku === 'SW-ARM-BEE-IVO') || createdArmchairVariants[0];
+  const walnutForestVariant = createdArmchairVariants.find((v) => v.sku === 'SW-ARM-WAL-FOR') || createdArmchairVariants[0];
 
-  // Order 1: DELIVERED
-  await prisma.order.create({
+  // سفارش ۱: تحویل داده شده (DELIVERED) - متصل به معرف و کیف پول!
+  // سارا رضایی میز ناهارخوری ۱۶,۸۰۰,۰۰۰ تومانی را با کد تخفیف NOOROOZ خرید کرده است.
+  // پاداش معرف دقیقاً ۲۵۰,۰۰۰ تومان به کیف پول محمد گندمی واریز شده و با تراکنش کیف پول همخوانی دارد.
+  const order1 = await prisma.order.create({
     data: {
       orderNumber: 'SW-1001',
-      userId: customer.id,
-      customerName: `${customer.firstName} ${customer.lastName}`,
-      customerEmail: customer.email,
-      customerPhone: customer.phone,
+      userId: refereeCustomer1.id,
+      customerName: `${refereeCustomer1.firstName} ${refereeCustomer1.lastName}`,
+      customerEmail: refereeCustomer1.email,
+      customerPhone: refereeCustomer1.phone,
+      referralId: referralRelation.id,
       status: OrderStatus.DELIVERED,
       paymentStatus: PaymentStatus.PAID,
-      paymentMethod: 'CREDIT_CARD',
-      transactionId: 'ch_3N82xL2eZvKYlo2C019842',
-      paidAt: daysAgo(18),
-      subtotal: 2079.0,
-      discountAmount: 200.0,
-      shippingAmount: 75.0,
-      taxAmount: 156.0,
-      totalAmount: 2110.0,
-      currency: 'USD',
-      couponId: couponWoodcraft?.id || null,
-      couponCode: couponWoodcraft ? 'WOODCRAFT15' : null,
+      paymentMethod: 'ZARINPAL',
+      transactionId: 'ZP-1001-99824',
+      paidAt: daysAgo(5),
+      subtotal: 16800000,
+      discountAmount: 500000,
+      shippingAmount: 0, // ارسال رایگان
+      taxAmount: 0,
+      totalAmount: 16300000, // ۱۶ میلیون و ۳۰۰ هزار تومان
+      currency: 'IRT',
+      couponId: couponNoorooz?.id || null,
+      couponCode: couponNoorooz ? 'NOOROOZ' : null,
       shippingAddress: {
-        recipientName: 'Alexander Wright',
-        phone: '+1 555-0245',
-        street: '742 Evergreen Terrace',
-        city: 'Portland',
-        province: 'Oregon',
-        postalCode: '97201',
-        country: 'United States',
+        recipientName: 'سارا رضایی',
+        phone: '09123333333',
+        street: 'تهران، پاسداران، بوستان دوم، تقاطع پایدارفرد، پلاک ۱۴، واحد ۳',
+        city: 'تهران',
+        province: 'تهران',
+        postalCode: '1668744112',
+        country: 'ایران',
       },
-      shippingMethod: 'White Glove Freight Delivery',
-      shippingCarrier: 'FedEx Freight',
-      trackingNumber: 'FEDEX-FRT-98214819',
-      trackingUrl: 'https://www.fedex.com/fedextrack/?trknbr=98214819',
-      shippedAt: daysAgo(9),
-      deliveredAt: daysAgo(5),
-      createdAt: daysAgo(18),
-      customerNotes: 'Please place the dining table directly in the formal dining room.',
-      internalNotes: 'White glove crew reported flawless installation. Customer signed delivery manifest.',
+      shippingMethod: 'باربری اختصاصی مبلمان و دکوراسیون سنگین',
+      shippingCarrier: 'باربری تخصصی سلامت بار تهران',
+      trackingNumber: 'SLM-998214',
+      trackingUrl: 'https://tipaxco.com/tracking?id=SLM-998214',
+      shippedAt: daysAgo(3),
+      deliveredAt: daysAgo(1),
+      createdAt: daysAgo(5),
+      customerNotes: 'لطفاً هنگام حمل میز ناهارخوری به طبقه سوم از آسانسور باربری استفاده شود.',
+      internalNotes: 'میز به سلامت در محل مشتری تحویل و مونتاژ شد. پاداش معرف به کیف پول معرف واریز گردید.',
       items: {
         create: [
           {
             productId: diningTable.id,
-            productName: 'Aalborg Solid White Oak Dining Table (8-Seater)',
-            productSku: 'SW-DT-001',
+            productName: diningTable.name,
+            productSku: diningTable.sku,
             productImage: PLACEHOLDER_IMAGE,
-            unitPrice: 1099.0,
+            unitPrice: 16800000,
             quantity: 1,
-            totalPrice: 1099.0,
-            selectedAttributes: { Finish: 'Natural Low-Sheen Hardwax' },
-          },
-          {
-            productId: variableArmchair.id,
-            variantId: walForVariant.id,
-            productName: 'Nordic Minimalist Lounge Armchair',
-            productSku: walForVariant.sku,
-            variantName: 'American Black Walnut / Forest Green Velvet',
-            productImage: PLACEHOLDER_IMAGE,
-            unitPrice: 490.0,
-            quantity: 2,
-            totalPrice: 980.0,
-            selectedAttributes: { 'Wood Finish': 'American Black Walnut', 'Fabric Material': 'Forest Green Velvet' },
+            totalPrice: 16800000,
+            cashbackEarned: 50000,
+            selectedAttributes: { 'رنگ چوب': 'چوب راش طبیعی سوپر گرجستان' },
           },
         ],
       },
       transactions: {
         create: [
           {
-            gateway: 'STRIPE',
-            transactionId: 'ch_3N82xL2eZvKYlo2C019842',
+            gateway: 'ZARINPAL',
+            transactionId: 'ZP-1001-99824',
             status: TransactionStatus.SUCCESS,
-            amount: 2110.0,
-            currency: 'USD',
-            cardPan: '4242-****-****-4242',
-            trackingCode: 'STRIPE-AUTH-918239',
-            createdAt: daysAgo(18),
-            gatewayResponse: { brand: 'visa', funding: 'credit', country: 'US', network_status: 'approved_by_network' },
+            amount: 16300000,
+            currency: 'IRT',
+            cardPan: '6037-99**-****-4412',
+            trackingCode: 'ZP-RRN-99812401',
+            createdAt: daysAgo(5),
+            gatewayResponse: {
+              code: 100,
+              message: 'عملیات پرداخت با موفقیت در شاپرک تایید شد',
+              card_pan: '603799******4412',
+              ref_id: 99812401,
+            },
           },
         ],
       },
       timeline: {
         create: [
-          { status: OrderStatus.PENDING, note: 'Order created via checkout', createdAt: daysAgo(18) },
-          { status: OrderStatus.PROCESSING, note: 'Payment authorized via Stripe ($2,110.00)', createdAt: daysAgo(18) },
-          { status: OrderStatus.PROCESSING, note: 'Passed to master workshop for assembly & inspection', createdAt: daysAgo(14) },
-          { status: OrderStatus.SHIPPED, note: 'Handed over to FedEx Freight (Tracking: FEDEX-FRT-98214819)', createdAt: daysAgo(9) },
-          { status: OrderStatus.DELIVERED, note: 'Delivered and assembled at Portland residence', createdAt: daysAgo(5) },
+          { status: OrderStatus.PENDING, note: 'سفارش توسط خریدار در سایت ثبت شد', createdAt: daysAgo(5) },
+          { status: OrderStatus.PROCESSING, note: 'پرداخت ۱۶,۳۰۰,۰۰۰ تومان از طریق درگاه زرین‌پال تایید شد', createdAt: daysAgo(5) },
+          { status: OrderStatus.PROCESSING, note: 'بسته‌بندی و کنترل کیفیت در انبار مرکزی شادچوب', createdAt: daysAgo(4) },
+          { status: OrderStatus.SHIPPED, note: 'تحویل به باربری سلامت بار تهران (کد: SLM-998214)', createdAt: daysAgo(3) },
+          { status: OrderStatus.DELIVERED, note: 'سفارش تحویل خریدار شد. پاداش معرف (۲۵۰,۰۰۰ تومان) آزاد شد.', createdAt: daysAgo(1) },
         ],
       },
     },
   });
 
-  // Order 2: PROCESSING
+  // سفارش ۲: در حال پردازش (PROCESSING)
+  // علی حسینی مبل راحتی تک‌نفره شگفت‌انگیز را خریده است.
   await prisma.order.create({
     data: {
       orderNumber: 'SW-1002',
@@ -734,86 +883,73 @@ Unlike polyurethane plastic coatings that flake or yellow over time, hardwax oil
       customerPhone: customer2.phone,
       status: OrderStatus.PROCESSING,
       paymentStatus: PaymentStatus.PAID,
-      paymentMethod: 'STRIPE',
-      transactionId: 'pi_3L71wM2eZvKYlo2C889104',
-      paidAt: daysAgo(2),
-      subtotal: 420.0,
-      discountAmount: 42.0,
-      shippingAmount: 35.0,
-      taxAmount: 30.24,
-      totalAmount: 443.24,
-      currency: 'USD',
-      couponId: couponWelcome?.id || null,
-      couponCode: couponWelcome ? 'WELCOME10' : null,
+      paymentMethod: 'MELLAT',
+      transactionId: 'MEL-2002-88192',
+      paidAt: daysAgo(1),
+      subtotal: 7200000, // مبل با قیمت تخفیف شگفت‌انگیز
+      discountAmount: 0,
+      shippingAmount: 65000,
+      taxAmount: 0,
+      totalAmount: 7265000,
+      currency: 'IRT',
       shippingAddress: {
-        recipientName: 'Eleanor Vance',
-        phone: '+1 555-0812',
-        street: '1204 Pine Street, Apt 5B',
-        city: 'Seattle',
-        province: 'Washington',
-        postalCode: '98101',
-        country: 'United States',
+        recipientName: 'علی حسینی',
+        phone: '09124444444',
+        street: 'اصفهان، خیابان چهارباغ بالا، کوچه کاج، پلاک ۸، مجتمع پارسیان',
+        city: 'اصفهان',
+        province: 'اصفهان',
+        postalCode: '8164812345',
+        country: 'ایران',
       },
-      shippingMethod: 'Standard Express Courier',
-      shippingCarrier: 'Tipax Express Courier',
-      trackingNumber: 'TPX-99823104',
-      trackingUrl: 'https://tipaxco.com/tracking?id=TPX-99823104',
-      createdAt: daysAgo(2),
-      customerNotes: 'Elevator access available on north side of apartment building.',
-      internalNotes: 'Customer requested extra beeswax protective balm applied to armrests before dispatch.',
+      shippingMethod: 'ارسال پیشتاز سراسری',
+      shippingCarrier: 'شرکت ملی پست',
+      trackingNumber: 'PST-8819203',
+      trackingUrl: 'https://tracking.post.ir/?id=PST-8819203',
+      createdAt: daysAgo(1),
       items: {
         create: [
           {
             productId: variableArmchair.id,
-            variantId: oakIvoVariant.id,
-            productName: 'Nordic Minimalist Lounge Armchair',
-            productSku: oakIvoVariant.sku,
-            variantName: 'Natural White Oak / Tactile Ivory Linen',
+            variantId: beechIvoryVariant.id,
+            productName: variableArmchair.name,
+            productSku: beechIvoryVariant.sku,
+            variantName: 'چوب راش طبیعی / کتان کرم عاجی',
             productImage: PLACEHOLDER_IMAGE,
-            unitPrice: 420.0,
+            unitPrice: 7200000,
             quantity: 1,
-            totalPrice: 420.0,
-            selectedAttributes: { 'Wood Finish': 'Solid White Oak', 'Fabric Material': 'Ivory Linen' },
+            totalPrice: 7200000,
+            cashbackEarned: 150000,
+            selectedAttributes: { 'نوع چوب': 'چوب راش طبیعی', 'رنگ پارچه': 'کتان کرم عاجی' },
           },
         ],
       },
       transactions: {
         create: [
           {
-            gateway: 'ZARINPAL',
-            transactionId: 'A000000000000000000000000002002',
-            status: TransactionStatus.FAILED,
-            amount: 443.24,
-            currency: 'USD',
-            cardPan: '6037-99**-****-8812',
-            errorMessage: 'کاربر تراکنش را در درگاه شاپرک لغو کرد (User cancelled at Shaparak gateway)',
-            createdAt: daysAgo(2),
-            gatewayResponse: { code: -51, message: 'Session is not active, user cancelled' },
-          },
-          {
-            gateway: 'STRIPE',
-            transactionId: 'pi_3L71wM2eZvKYlo2C889104',
+            gateway: 'MELLAT',
+            transactionId: 'MEL-2002-88192',
             status: TransactionStatus.SUCCESS,
-            amount: 443.24,
-            currency: 'USD',
-            cardPan: '5022-29**-****-8104',
-            trackingCode: 'STRIPE-AUTH-441920',
-            createdAt: daysAgo(2),
-            gatewayResponse: { brand: 'mastercard', funding: 'debit', status: 'succeeded' },
+            amount: 7265000,
+            currency: 'IRT',
+            cardPan: '5022-29**-****-8810',
+            trackingCode: 'BPM-RES-448102',
+            createdAt: daysAgo(1),
+            gatewayResponse: { ResCode: '0', SaleOrderId: '2002', SaleReferenceId: '448102' },
           },
         ],
       },
       timeline: {
         create: [
-          { status: OrderStatus.PENDING, note: 'Order placed by customer', createdAt: daysAgo(2) },
-          { status: OrderStatus.PROCESSING, note: 'Payment verified ($443.24)', createdAt: daysAgo(2) },
-          { status: OrderStatus.PROCESSING, note: 'Custom upholstery staging in progress', createdAt: daysAgo(1) },
+          { status: OrderStatus.PENDING, note: 'ثبت سفارش توسط خریدار در جشنواره شگفت‌انگیز', createdAt: daysAgo(1) },
+          { status: OrderStatus.PROCESSING, note: 'پرداخت ۷,۲۶۵,۰۰۰ تومان از درگاه بانک ملت با موفقیت تایید شد', createdAt: daysAgo(1) },
+          { status: OrderStatus.PROCESSING, note: 'آماده‌سازی پارچه و کنترل فوم در کارگاه', createdAt: hoursAgo(8) },
         ],
       },
     },
   });
 
-  // Order 3: SHIPPED
+  // سفارش ۳: ارسال شده (SHIPPED)
+  // زهرا کریمی میز جلو مبلی روستیک سفارش داده و ارسال شده است.
   await prisma.order.create({
     data: {
       orderNumber: 'SW-1003',
@@ -823,316 +959,236 @@ Unlike polyurethane plastic coatings that flake or yellow over time, hardwax oil
       customerPhone: customer3.phone,
       status: OrderStatus.SHIPPED,
       paymentStatus: PaymentStatus.PAID,
-      paymentMethod: 'BANK_TRANSFER',
-      transactionId: 'wire_ref_89172648',
-      paidAt: daysAgo(5),
-      subtotal: 1099.0,
-      discountAmount: 50.0,
-      shippingAmount: 75.0,
-      taxAmount: 83.92,
-      totalAmount: 1207.92,
-      currency: 'USD',
-      couponId: couponSolidWood.id,
-      couponCode: 'SOLIDWOOD50',
+      paymentMethod: 'SAMAN',
+      transactionId: 'SEP-3003-77218',
+      paidAt: daysAgo(3),
+      subtotal: 4200000,
+      discountAmount: 0,
+      shippingAmount: 65000,
+      taxAmount: 0,
+      totalAmount: 4265000,
+      currency: 'IRT',
       shippingAddress: {
-        recipientName: 'Marcus Chen',
-        phone: '+1 555-0934',
-        street: '550 NW 13th Ave',
-        city: 'Portland',
-        province: 'Oregon',
-        postalCode: '97209',
-        country: 'United States',
+        recipientName: 'زهرا کریمی',
+        phone: '09125555555',
+        street: 'شیراز، خیابان عفیف‌آباد، کوچه ۱۲، ساختمان مهر، پلاک ۲۲',
+        city: 'شیراز',
+        province: 'فارس',
+        postalCode: '7193612345',
+        country: 'ایران',
       },
-      shippingMethod: 'Specialized Freight Logistics',
-      shippingCarrier: 'Old Dominion Freight Line',
-      trackingNumber: 'ODFL-FRT-7721839',
-      trackingUrl: 'https://www.odfl.com/trace/?pro=7721839',
-      shippedAt: daysAgo(2),
-      createdAt: daysAgo(6),
-      internalNotes: 'Reinforced corner packaging applied to protect oak tabletop corners.',
+      shippingMethod: 'ارسال پیشتاز سراسری',
+      shippingCarrier: 'تیپاکس اکسپرس',
+      trackingNumber: 'TPX-98214819',
+      trackingUrl: 'https://tipaxco.com/tracking?id=TPX-98214819',
+      shippedAt: daysAgo(1),
+      createdAt: daysAgo(3),
       items: {
         create: [
           {
-            productId: diningTable.id,
-            productName: 'Aalborg Solid White Oak Dining Table (8-Seater)',
-            productSku: 'SW-DT-001',
+            productId: coffeeTable.id,
+            productName: coffeeTable.name,
+            productSku: coffeeTable.sku,
             productImage: PLACEHOLDER_IMAGE,
-            unitPrice: 1099.0,
+            unitPrice: 4200000,
             quantity: 1,
-            totalPrice: 1099.0,
-            selectedAttributes: { Finish: 'Natural Low-Sheen Hardwax' },
+            totalPrice: 4200000,
+            cashbackEarned: 120000,
+            selectedAttributes: { 'پوشش چوب': 'چوب گردوی کوهستانی با روغن گیاهی' },
           },
         ],
       },
       transactions: {
         create: [
           {
-            gateway: 'BANK_TRANSFER',
-            transactionId: 'wire_ref_89172648',
+            gateway: 'SAMAN',
+            transactionId: 'SEP-3003-77218',
             status: TransactionStatus.SUCCESS,
-            amount: 1207.92,
-            currency: 'USD',
-            trackingCode: 'ACH-WIRE-89172648',
-            createdAt: daysAgo(5),
-            gatewayResponse: { bank: 'Chase Commercial', confirmation: 'CLEARED_FUNDS' },
+            amount: 4265000,
+            currency: 'IRT',
+            cardPan: '5892-10**-****-3319',
+            trackingCode: 'SEP-TRN-77218',
+            createdAt: daysAgo(3),
+            gatewayResponse: { Status: 1, RRN: '77218991' },
           },
         ],
       },
       timeline: {
         create: [
-          { status: OrderStatus.PENDING, note: 'Order placed, awaiting wire transfer', createdAt: daysAgo(6) },
-          { status: OrderStatus.PROCESSING, note: 'Bank wire verified ($1,207.92)', createdAt: daysAgo(5) },
-          { status: OrderStatus.PROCESSING, note: 'Crate packaged and timber sealed', createdAt: daysAgo(3) },
-          { status: OrderStatus.SHIPPED, note: 'Dispatched via Old Dominion Freight Line (Pro: ODFL-FRT-7721839)', createdAt: daysAgo(2) },
+          { status: OrderStatus.PENDING, note: 'ثبت سفارش در فروشگاه اینترنتی', createdAt: daysAgo(3) },
+          { status: OrderStatus.PROCESSING, note: 'پرداخت ۴,۲۶۵,۰۰۰ تومان از درگاه سامان تایید شد', createdAt: daysAgo(3) },
+          { status: OrderStatus.SHIPPED, note: 'مرسوله با بارنامه TPX-98214819 تحویل تیپاکس شیراز گردید', createdAt: daysAgo(1) },
         ],
       },
     },
   });
 
-  // Order 4: PENDING
+  // سفارش ۴: در انتظار پرداخت (PENDING)
   await prisma.order.create({
     data: {
       orderNumber: 'SW-1004',
-      userId: customer.id,
-      customerName: `${customer.firstName} ${customer.lastName}`,
-      customerEmail: customer.email,
-      customerPhone: customer.phone,
+      userId: refereeCustomer1.id,
+      customerName: `${refereeCustomer1.firstName} ${refereeCustomer1.lastName}`,
+      customerEmail: refereeCustomer1.email,
+      customerPhone: refereeCustomer1.phone,
       status: OrderStatus.PENDING,
       paymentStatus: PaymentStatus.PENDING,
       paymentMethod: 'BANK_TRANSFER',
-      subtotal: 990.0,
-      discountAmount: 0.0,
-      shippingAmount: 50.0,
-      taxAmount: 79.2,
-      totalAmount: 1119.2,
-      currency: 'USD',
+      subtotal: 4800000,
+      discountAmount: 0,
+      shippingAmount: 65000,
+      taxAmount: 0,
+      totalAmount: 4865000,
+      currency: 'IRT',
       shippingAddress: {
-        recipientName: 'Alexander Wright',
-        phone: '+1 555-0245',
-        street: '742 Evergreen Terrace',
-        city: 'Portland',
-        province: 'Oregon',
-        postalCode: '97201',
-        country: 'United States',
+        recipientName: 'سارا رضایی',
+        phone: '09123333333',
+        street: 'تهران، پاسداران، بوستان دوم، تقاطع پایدارفرد، پلاک ۱۴، واحد ۳',
+        city: 'تهران',
+        province: 'تهران',
+        postalCode: '1668744112',
+        country: 'ایران',
       },
-      shippingMethod: 'Standard Freight',
-      shippingCarrier: 'Chapar Logistics',
-      trackingNumber: 'CHP-4491028',
-      trackingUrl: 'https://chapar.post/track?id=CHP-4491028',
-      createdAt: hoursAgo(6),
-      customerNotes: 'Please ring front doorbell upon delivery.',
+      shippingMethod: 'ارسال پیشتاز سراسری',
+      createdAt: hoursAgo(4),
       items: {
         create: [
           {
-            productId: variableArmchair.id,
-            variantId: walChaVariant.id,
-            productName: 'Nordic Minimalist Lounge Armchair',
-            productSku: walChaVariant.sku,
-            variantName: 'American Black Walnut / Charcoal Grey',
+            productId: diningChair.id,
+            productName: diningChair.name,
+            productSku: diningChair.sku,
             productImage: PLACEHOLDER_IMAGE,
-            unitPrice: 495.0,
+            unitPrice: 2400000,
             quantity: 2,
-            totalPrice: 990.0,
-            selectedAttributes: { 'Wood Finish': 'American Black Walnut', 'Fabric Material': 'Charcoal Grey' },
-          },
-        ],
-      },
-      transactions: {
-        create: [
-          {
-            gateway: 'BANK_TRANSFER',
-            transactionId: 'wire_pending_1004',
-            status: TransactionStatus.PENDING,
-            amount: 1119.20,
-            currency: 'USD',
-            createdAt: hoursAgo(6),
-            gatewayResponse: { instructions: 'Deposit reference: SW-1004' },
+            totalPrice: 4800000,
+            cashbackEarned: 40000,
+            selectedAttributes: { 'چوب': 'راش گرجستان' },
           },
         ],
       },
       timeline: {
         create: [
-          { status: OrderStatus.PENDING, note: 'Order created, awaiting bank payment clearance', createdAt: hoursAgo(6) },
+          { status: OrderStatus.PENDING, note: 'سفارش ثبت شده و در انتظار پرداخت یا فیش واریزی بانکی است', createdAt: hoursAgo(4) },
         ],
       },
     },
   });
 
-  // Order 5: CANCELLED
+  // سفارش ۵: لغو شده و بازگشت وجه (CANCELLED)
   await prisma.order.create({
     data: {
       orderNumber: 'SW-1005',
-      userId: customer3.id,
-      customerName: `${customer3.firstName} ${customer3.lastName}`,
-      customerEmail: customer3.email,
-      customerPhone: customer3.phone,
-      status: OrderStatus.CANCELLED,
-      paymentStatus: PaymentStatus.REFUNDED,
-      paymentMethod: 'CREDIT_CARD',
-      transactionId: 'ch_3K99qP2eZvKYlo2C991823',
-      paidAt: daysAgo(15),
-      subtotal: 480.0,
-      discountAmount: 0.0,
-      shippingAmount: 35.0,
-      taxAmount: 38.4,
-      totalAmount: 553.4,
-      currency: 'USD',
-      shippingAddress: {
-        recipientName: 'Marcus Chen',
-        phone: '+1 555-0934',
-        street: '550 NW 13th Ave',
-        city: 'Portland',
-        province: 'Oregon',
-        postalCode: '97209',
-        country: 'United States',
-      },
-      shippingMethod: 'Standard Express Courier',
-      shippingCarrier: 'Tipax Express Courier',
-      trackingNumber: 'TPX-55192831',
-      trackingUrl: 'https://tipaxco.com/tracking?id=TPX-55192831',
-      createdAt: daysAgo(15),
-      internalNotes: 'Customer requested order cancellation due to unexpected studio relocation. 100% refund processed.',
-      items: {
-        create: [
-          {
-            productId: variableArmchair.id,
-            variantId: oakForVariant.id,
-            productName: 'Nordic Minimalist Lounge Armchair',
-            productSku: oakForVariant.sku,
-            variantName: 'Natural White Oak / Forest Green Velvet',
-            productImage: PLACEHOLDER_IMAGE,
-            unitPrice: 480.0,
-            quantity: 1,
-            totalPrice: 480.0,
-            selectedAttributes: { 'Wood Finish': 'Solid White Oak', 'Fabric Material': 'Forest Green Velvet' },
-          },
-        ],
-      },
-      transactions: {
-        create: [
-          {
-            gateway: 'STRIPE',
-            transactionId: 'ch_3K99qP2eZvKYlo2C991823',
-            status: TransactionStatus.SUCCESS,
-            amount: 553.40,
-            currency: 'USD',
-            cardPan: '4111-11**-****-1111',
-            trackingCode: 'STRIPE-AUTH-551982',
-            createdAt: daysAgo(15),
-            gatewayResponse: { brand: 'visa', status: 'succeeded' },
-          },
-          {
-            gateway: 'STRIPE',
-            transactionId: 're_3K99qP2eZvKYlo2C991823_rfnd',
-            status: TransactionStatus.REFUNDED,
-            amount: 553.40,
-            currency: 'USD',
-            trackingCode: 'RFND-STRIPE-991823',
-            createdAt: daysAgo(14),
-            gatewayResponse: { refund_status: 'succeeded', reason: 'requested_by_customer' },
-          },
-        ],
-      },
-      timeline: {
-        create: [
-          { status: OrderStatus.PENDING, note: 'Order submitted by customer', createdAt: daysAgo(15) },
-          { status: OrderStatus.PROCESSING, note: 'Payment captured via Stripe ($553.40)', createdAt: daysAgo(15) },
-          { status: OrderStatus.CANCELLED, note: 'Customer requested cancellation prior to packing', createdAt: daysAgo(14) },
-          { status: OrderStatus.REFUNDED, note: 'Full refund ($553.40) refunded to credit card', createdAt: daysAgo(14) },
-        ],
-      },
-    },
-  });
-
-  // Order 6: DELIVERED
-  await prisma.order.create({
-    data: {
-      orderNumber: 'SW-1006',
       userId: customer2.id,
       customerName: `${customer2.firstName} ${customer2.lastName}`,
       customerEmail: customer2.email,
       customerPhone: customer2.phone,
-      status: OrderStatus.DELIVERED,
-      paymentStatus: PaymentStatus.PAID,
+      status: OrderStatus.CANCELLED,
+      paymentStatus: PaymentStatus.REFUNDED,
       paymentMethod: 'ZARINPAL',
-      transactionId: 'A000000000000000000000000001006',
-      paidAt: daysAgo(25),
-      subtotal: 990.0,
-      discountAmount: 148.5,
-      shippingAmount: 50.0,
-      taxAmount: 71.32,
-      totalAmount: 962.82,
-      currency: 'USD',
-      couponId: couponWoodcraft?.id || null,
-      couponCode: couponWoodcraft ? 'WOODCRAFT15' : null,
+      transactionId: 'ZP-5005-CANCEL',
+      paidAt: daysAgo(10),
+      subtotal: 4900000,
+      discountAmount: 0,
+      shippingAmount: 65000,
+      taxAmount: 0,
+      totalAmount: 4965000,
+      currency: 'IRT',
       shippingAddress: {
-        recipientName: 'Eleanor Vance',
-        phone: '+1 555-0812',
-        street: '1204 Pine Street, Apt 5B',
-        city: 'Seattle',
-        province: 'Washington',
-        postalCode: '98101',
-        country: 'United States',
+        recipientName: 'علی حسینی',
+        phone: '09124444444',
+        street: 'اصفهان، چهارباغ بالا، کوچه کاج، پلاک ۸',
+        city: 'اصفهان',
+        province: 'اصفهان',
+        postalCode: '8164812345',
+        country: 'ایران',
       },
-      shippingMethod: 'Freight Logistics',
-      shippingCarrier: 'UPS Freight',
-      trackingNumber: 'UPS-FRT-9182319',
-      trackingUrl: 'https://www.ups.com/track?tracknum=9182319',
-      shippedAt: daysAgo(20),
-      deliveredAt: daysAgo(16),
-      createdAt: daysAgo(25),
+      shippingMethod: 'ارسال پیشتاز سراسری',
+      createdAt: daysAgo(10),
+      internalNotes: 'مشتری پیش از مرحله خروج کالا از انبار، درخواست لغو و عودت به شماره شبا را ثبت کرد. وجه ۱۰۰٪ عودت داده شد.',
       items: {
         create: [
           {
-            productId: variableArmchair.id,
-            variantId: walIvoVariant.id,
-            productName: 'Nordic Minimalist Lounge Armchair',
-            productSku: walIvoVariant.sku,
-            variantName: 'American Black Walnut / Tactile Ivory Linen',
+            productId: coffeeTable.id,
+            productName: coffeeTable.name,
+            productSku: coffeeTable.sku,
             productImage: PLACEHOLDER_IMAGE,
-            unitPrice: 495.0,
-            quantity: 2,
-            totalPrice: 990.0,
-            selectedAttributes: { 'Wood Finish': 'American Black Walnut', 'Fabric Material': 'Ivory Linen' },
-          },
-        ],
-      },
-      transactions: {
-        create: [
-          {
-            gateway: 'ZARINPAL',
-            transactionId: 'A000000000000000000000000001006',
-            status: TransactionStatus.SUCCESS,
-            amount: 962.82,
-            currency: 'USD',
-            cardPan: '6037-99**-****-9102',
-            trackingCode: 'ZP-RRN-992148201',
-            createdAt: daysAgo(25),
-            gatewayResponse: {
-              code: 100,
-              message: 'عملیات پرداخت با موفقیت انجام شد (Payment verified successfully)',
-              card_hash: '1E8276D38F7A8...',
-              card_pan: '603799******9102',
-              ref_id: 992148201,
-              fee_type: 'Merchant',
-              fee: 1000,
-            },
+            unitPrice: 4900000,
+            quantity: 1,
+            totalPrice: 4900000,
+            selectedAttributes: { 'پوشش چوب': 'چوب گردو' },
           },
         ],
       },
       timeline: {
         create: [
-          { status: OrderStatus.PENDING, note: 'Order placed by customer', createdAt: daysAgo(25) },
-          { status: OrderStatus.PROCESSING, note: 'Payment processed ($962.82)', createdAt: daysAgo(25) },
-          { status: OrderStatus.SHIPPED, note: 'Shipped via UPS Freight', createdAt: daysAgo(20) },
-          { status: OrderStatus.DELIVERED, note: 'Signed & accepted at Seattle delivery address', createdAt: daysAgo(16) },
+          { status: OrderStatus.PENDING, note: 'سفارش ثبت گردید', createdAt: daysAgo(10) },
+          { status: OrderStatus.PROCESSING, note: 'پرداخت با موفقیت انجام شد', createdAt: daysAgo(10) },
+          { status: OrderStatus.CANCELLED, note: 'به درخواست مشتری پیش از ارسال لغو شد', createdAt: daysAgo(9) },
         ],
       },
     },
   });
 
-  console.log('🛍️ Orders seeded: SW-1001 (DELIVERED), SW-1002 (PROCESSING), SW-1003 (SHIPPED), SW-1004 (PENDING), SW-1005 (CANCELLED), SW-1006 (DELIVERED).');
-  console.log('✅ Seeding completed successfully!');
+  console.log('🛍️ 5 Iranian Orders seeded: SW-1001 (DELIVERED with Referral), SW-1002 (PROCESSING), SW-1003 (SHIPPED), SW-1004 (PENDING), SW-1005 (CANCELLED).');
+
+  // 12. Blog Categories & Posts (وبلاگ آموزشی و دکوراسیون کاملاً فارسی)
+  const blogCatDecor = await prisma.blogCategory.create({
+    data: {
+      name: 'راهنمای چیدمان و دکوراسیون منزل',
+      slug: 'home-decor-guide',
+      description: 'اصول ترکیب مبلمان، نورپردازی و هماهنگی بافت‌های چوبی در خانه‌های ایرانی.',
+    },
+  });
+
+  const blogCatWoodCare = await prisma.blogCategory.create({
+    data: {
+      name: 'نگهداری و مراقبت از چوب طبیعی',
+      slug: 'wood-care-and-maintenance',
+      description: 'نکات کاربردی برای افزایش طول عمر و درخشش مبلمان و میزهای چوب گردو و راش.',
+    },
+  });
+
+  await prisma.blogPost.create({
+    data: {
+      title: 'راهنمای جامع واکس‌زدن و مراقبت از مبلمان چوب طبیعی در منزل',
+      slug: 'natural-wood-furniture-waxing-care-guide',
+      excerpt: 'چگونه با روغن‌های گیاهی ارگانیک و واکس زنبور عسل، چوب طبیعی را در برابر خشکی و ترک‌خوردگی محافظت کنیم.',
+      content: `### چرا چوب طبیعی نیاز به رسیدگی دوره‌ای دارد؟
+چوب یک متریال زنده و تنفس‌پذیر است. تغییرات رطوبت فصل و گرمایش منازل در زمستان می‌تواند رطوبت طبیعی چوب را کاهش دهد. استفاده دوره‌ای از روغن‌های گیاهی استاندارد (مانند روغن بزرک تصفیه‌شده یا روغن زیتون بدون بو) و واکس بر پایه موم عسل، رگه‌ها و گره‌های چوب را زنده نگاه می‌دارد.
+
+#### سه مرحله طلایی برای تمیزکاری و جلا دادن:
+1. **گردگیری اولیه:** ابتدا با دستمال میکروفایبر کاملاً نرم و نم‌دار گرد و غبار سطحی را بزدایید.
+2. **اعمال واکس محافظ:** مقدار کمی موم عسل مخصوص چوب را با اسفنج تمیز در جهت رگه‌های چوب ماساژ دهید.
+3. **پرداخت نهایی:** پس از ۱۵ دقیقه، با یک پارچه خشک نخی سطح را مالش دهید تا درخشش ابریشمی ملایمی ایجاد شود.`,
+      status: PostStatus.PUBLISHED,
+      authorId: admin.id,
+      categoryId: blogCatWoodCare.id,
+      featuredImage: PLACEHOLDER_IMAGE,
+      publishedAt: daysAgo(8),
+    },
+  });
+
+  await prisma.blogPost.create({
+    data: {
+      title: 'چگونه چوب گردو و راش را در چیدمان مدرن با یکدیگر هماهنگ کنیم؟',
+      slug: 'matching-walnut-and-beech-in-modern-interior',
+      excerpt: 'ترکیب تناژهای تیره و روشن چوب در اتاق نشیمن و پذیرایی برای ایجاد عمق و گرما در دکوراسیون.',
+      content: `### هنر تضاد در دکوراسیون داخلی
+بسیاری تصور می‌کنند تمامی اجزای خانه باید دقیقاً از یک رنگ چوب باشند، در حالی که طراحان برجسته معتقدند ترکیب چوب گرم گردو در کنار گرمای روشن چوب راش، پویایی و عمق بصری شگفت‌انگیزی خلق می‌کند.
+
+#### نکات کلیدی برای چیدمان ترکیبی:
+* **تعیین عنصر شاخص:** میز ناهارخوری بزرگ را با چوب تیره گردو انتخاب کنید تا نقطه کانونی فضا باشد.
+* **ایجاد تعادل با پارچه:** از پارچه‌های خنثی مانند کتان کرم عاجی یا طوسی روشن برای صندلی‌ها استفاده کنید تا پل ارتباطی بین دو تناژ چوب باشند.`,
+      status: PostStatus.PUBLISHED,
+      authorId: admin.id,
+      categoryId: blogCatDecor.id,
+      featuredImage: PLACEHOLDER_IMAGE,
+      publishedAt: daysAgo(3),
+    },
+  });
+
+  console.log('✍️ Persian Blog Categories & Articles seeded.');
+  console.log('🎉 100% Persian Seed completed with perfect synchronization across Orders, Referrals, Wallets, and Flash Deals!');
 }
 
 main()

@@ -16,6 +16,7 @@ import {
   GlobalRewardType,
   UpdateReferralSettingsDto,
 } from './dto/referral-settings.dto';
+import { ConfigService } from '@nestjs/config';
 
 export const DEFAULT_REFERRAL_SETTINGS: UpdateReferralSettingsDto = {
   enabled: true,
@@ -35,6 +36,7 @@ export class ReferralService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly walletService: WalletService,
+    private readonly configService: ConfigService,
   ) {}
 
   /**
@@ -306,6 +308,36 @@ export class ReferralService {
       const qty = item.quantity;
 
       if (!product) continue;
+
+      // Check if product was purchased under an active flash deal with a custom referrer reward
+      const isFlashDealsEnabled = this.configService.get<boolean>('features.flashDeals', true);
+      const flashDealItem = isFlashDealsEnabled
+        ? await this.prisma.flashDealItem.findFirst({
+            where: {
+              productId: product.id,
+              deal: {
+                isActive: true,
+                startDate: { lte: order.createdAt },
+                endDate: { gte: order.createdAt },
+              },
+            },
+          })
+        : null;
+
+      if (flashDealItem && flashDealItem.referrerReward !== null && Number(flashDealItem.referrerReward) > 0) {
+        totalReferrerReward += Number(flashDealItem.referrerReward) * qty;
+        if (product.rewardType === RewardType.FIXED && product.refereeRewardValue) {
+          totalRefereeReward += Number(product.refereeRewardValue) * qty;
+        } else if (product.rewardType === RewardType.PERCENTAGE && product.refereeRewardValue) {
+          totalRefereeReward += (itemTotal * Number(product.refereeRewardValue)) / 100;
+        } else if (settings.enableGlobalReward !== false) {
+          totalRefereeReward +=
+            settings.defaultRewardType === GlobalRewardType.PERCENTAGE
+              ? (itemTotal * settings.defaultRefereeValue) / 100
+              : settings.defaultRefereeValue * qty;
+        }
+        continue;
+      }
 
       if (product.rewardType === RewardType.DISABLED) {
         // Product excluded from rewards

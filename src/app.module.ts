@@ -15,6 +15,7 @@ import { PaymentsModule } from '@/modules/payments/payments.module';
 import { OrdersModule } from '@/modules/orders/orders.module';
 import { WalletModule } from '@/modules/wallet/wallet.module';
 import { ReferralModule } from '@/modules/referral/referral.module';
+import { FlashDealsModule } from '@/modules/flash-deals/flash-deals.module';
 
 import { APP_GUARD } from '@nestjs/core';
 import { FeatureGuard } from '@/common/guards/feature.guard';
@@ -39,6 +40,7 @@ import { FeatureGuard } from '@/common/guards/feature.guard';
     OrdersModule,
     WalletModule,
     ReferralModule,
+    FlashDealsModule,
   ],
   providers: [
     {

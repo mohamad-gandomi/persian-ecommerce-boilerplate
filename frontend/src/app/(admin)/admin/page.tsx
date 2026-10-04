@@ -10,6 +10,7 @@ import {
   Palette,
   ShoppingBag,
   Tag,
+  Zap,
   Image as ImageIcon,
 } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -79,6 +80,7 @@ export default function DashboardPage() {
   const quickActions = React.useMemo(() => [
     { title: 'ثبت محصول جدید', description: 'ایجاد محصول ساده یا متغیر در کاتالوگ', href: '/products/new', icon: Package, category: 'عملیات' },
     { title: 'صف سفارش‌ها و ارسال', description: 'بررسی سفارش‌های جدید و آماده‌سازی ارسال', href: '/orders', icon: ShoppingBag, category: 'عملیات' },
+    { title: 'فروش شگفت‌انگیز و تخفیف زمان‌دار', description: 'مدیریت کمپین‌های تخفیف زمان‌دار با تایمر و پاداش خرید', href: '/flash-deals', icon: Zap, category: 'عملیات' },
     { title: 'تعریف کد تخفیف جدید', description: 'راه‌اندازی جشنواره و تخفیف‌های درصدی یا ثابت', href: '/coupons', icon: Tag, category: 'عملیات' },
     { title: 'ویژگی‌ها و متغیرها', description: 'مدیریت ویژگی‌ها، رنگ‌ها، سایزها و مشخصات کالا', href: '/attributes', icon: Palette, category: 'عملیات' },
     { title: 'سلسله‌مراتب دسته‌بندی‌ها', description: 'سازماندهی و مدیریت دسته‌بندی‌های فروشگاه', href: '/categories', icon: FolderTree, category: 'عملیات' },

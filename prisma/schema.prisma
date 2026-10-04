@@ -177,6 +177,7 @@ model Product {
   attributes          ProductAttribute[]
   variants            ProductVariant[]
   orderItems          OrderItem[]
+  flashDealItems      FlashDealItem[]
   rewardType          RewardType         @default(INHERIT)
   referrerRewardValue Decimal?           @db.Decimal(10, 2)
   refereeRewardValue  Decimal?           @db.Decimal(10, 2)
@@ -371,6 +372,49 @@ model Coupon {
 }
 
 // ----------------------------------------------------
+// Flash Deals & Special Offers (Time-limited Campaigns)
+// ----------------------------------------------------
+
+model FlashDeal {
+  id              String          @id @default(uuid())
+  title           String          // e.g. "تخفیف شگفت‌انگیز", "پیشنهادهای محدود امروز"
+  slug            String          @unique
+  description     String?         // e.g. "تا پایان زمان، فرصت خرید با پاداش بیشتر داری."
+  badgeText       String?         // e.g. "فروش ویژه", "پیشنهاد شگفت‌انگیز"
+  bannerImage     String?
+  startDate       DateTime
+  endDate         DateTime
+  isActive        Boolean         @default(true)
+  defaultCashback       Decimal?        @db.Decimal(10, 2) // پاداش خرید پیش‌فرض برای آیتم‌ها (تومان)
+  defaultReferrerReward Decimal?        @db.Decimal(10, 2) // پاداش معرف پیش‌فرض برای آیتم‌ها (تومان)
+  items                 FlashDealItem[]
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@map("flash_deals")
+}
+
+model FlashDealItem {
+  id             String       @id @default(uuid())
+  dealId         String
+  deal           FlashDeal    @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  discountType   DiscountType @default(PERCENTAGE)
+  discountValue  Decimal      @db.Decimal(10, 2)
+  specialPrice   Decimal      @db.Decimal(10, 2)
+  cashbackAmount Decimal?     @db.Decimal(10, 2)
+  referrerReward Decimal?     @db.Decimal(10, 2) // پاداش معرف (تومان)
+  stockLimit     Int?
+  soldCount      Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([dealId, productId])
+  @@map("flash_deal_items")
+}
+
+// ----------------------------------------------------
 // Orders & Commerce
 // ----------------------------------------------------
 
@@ -434,6 +478,7 @@ model OrderItem {
   unitPrice          Decimal         @db.Decimal(10, 2)
   quantity           Int             @default(1)
   totalPrice         Decimal         @db.Decimal(10, 2)
+  cashbackEarned     Decimal?        @db.Decimal(10, 2)
   selectedAttributes Json?           // e.g. { "Wood Finish": "Walnut", "Fabric Material": "Emerald Velvet" }
   createdAt          DateTime        @default(now())
 

@@ -531,6 +531,74 @@ export interface FeaturesConfig {
   referral: boolean;
   coupons: boolean;
   attributes: boolean;
+  flashDeals: boolean;
 }
+
+export interface FlashDealItem {
+  id: string;
+  dealId: string;
+  productId: string;
+  discountType: DiscountType;
+  discountValue: number;
+  specialPrice: number;
+  cashbackAmount?: number | null;
+  referrerReward?: number | null;
+  stockLimit?: number | null;
+  soldCount: number;
+  product?: Product;
+}
+
+export interface FlashDeal {
+  id: string;
+  title: string;
+  slug: string;
+  description?: string | null;
+  badgeText?: string | null;
+  bannerImage?: string | null;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  defaultCashback?: number | null;
+  defaultReferrerReward?: number | null;
+  isCurrentlyActive?: boolean;
+  isUpcoming?: boolean;
+  isExpired?: boolean;
+  remainingSeconds?: number;
+  itemsCount?: number;
+  items?: FlashDealItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ActiveFlashDealItem {
+  id: string;
+  productId: string;
+  productName: string;
+  productSlug: string;
+  categoryName: string;
+  imageUrl?: string | null;
+  originalPrice: number;
+  specialPrice: number;
+  discountPercentage: number;
+  cashbackAmount: number;
+  referrerReward?: number | null;
+  stockLimit?: number | null;
+  soldCount: number;
+  isAvailable: boolean;
+}
+
+export interface ActiveFlashDeal {
+  id: string;
+  title: string;
+  slug: string;
+  description?: string | null;
+  badgeText: string;
+  bannerImage?: string | null;
+  startDate: string;
+  endDate: string;
+  remainingSeconds: number;
+  items: ActiveFlashDealItem[];
+}
+
 
 
