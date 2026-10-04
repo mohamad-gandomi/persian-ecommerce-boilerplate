@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { UserCheck, MapPin, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
+import { isValidIranianNationalId } from '@/lib/jalali';
 import { Address, Role } from '@/types';
 import { Header } from '@/components/admin/header';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,8 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
   const [lastName, setLastName] = React.useState('');
   const [email, setEmail] = React.useState('');
   const [phone, setPhone] = React.useState('');
+  const [nationalId, setNationalId] = React.useState('');
+  const [birthDate, setBirthDate] = React.useState<Date | null>(null);
   const [role, setRole] = React.useState<Role>('CUSTOMER');
   const [isActive, setIsActive] = React.useState(true);
   const [password, setPassword] = React.useState('');
@@ -48,6 +51,8 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
       setLastName(user.lastName || '');
       setEmail(user.email || '');
       setPhone(user.phone || '');
+      setNationalId(user.nationalId || '');
+      setBirthDate(user.birthDate ? new Date(user.birthDate) : null);
       setRole(user.role || 'CUSTOMER');
       setIsActive(user.isActive ?? true);
       setPassword('');
@@ -91,8 +96,27 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
 
   const handleSaveProfile = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!firstName.trim() || !lastName.trim() || !email.trim()) { toast.error('نام، نام خانوادگی و ایمیل الزامی هستند'); return; }
-    const payload: any = { firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim().toLowerCase(), phone: phone.trim() || undefined, role, isActive };
+    if (!firstName.trim() || !lastName.trim() || !email.trim()) {
+      toast.error('نام، نام خانوادگی و ایمیل الزامی هستند');
+      return;
+    }
+
+    const cleanNational = nationalId.trim();
+    if (cleanNational && !isValidIranianNationalId(cleanNational)) {
+      toast.error('کد ملی وارد شده طبق الگوریتم رسمی نامعتبر است (باید ۱۰ رقم معتبر باشد)');
+      return;
+    }
+
+    const payload: any = {
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone.trim() || undefined,
+      nationalId: cleanNational || null,
+      birthDate: birthDate ? birthDate.toISOString() : null,
+      role,
+      isActive,
+    };
     if (password.trim()) payload.password = password.trim();
     updateMutation.mutate(payload);
   };
@@ -126,7 +150,26 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
           </TabsList>
 
           <TabsContent value="profile">
-            <UserProfileTab firstName={firstName} setFirstName={setFirstName} lastName={lastName} setLastName={setLastName} email={email} setEmail={setEmail} phone={phone} setPhone={setPhone} role={role} setRole={setRole} password={password} setPassword={setPassword} isSaving={updateMutation.isPending} onSave={handleSaveProfile} />
+            <UserProfileTab
+              firstName={firstName}
+              setFirstName={setFirstName}
+              lastName={lastName}
+              setLastName={setLastName}
+              email={email}
+              setEmail={setEmail}
+              phone={phone}
+              setPhone={setPhone}
+              nationalId={nationalId}
+              setNationalId={setNationalId}
+              birthDate={birthDate}
+              setBirthDate={setBirthDate}
+              role={role}
+              setRole={setRole}
+              password={password}
+              setPassword={setPassword}
+              isSaving={updateMutation.isPending}
+              onSave={handleSaveProfile}
+            />
           </TabsContent>
 
           <TabsContent value="addresses">

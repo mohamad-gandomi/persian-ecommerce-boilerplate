@@ -1,6 +1,15 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsDateString,
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  IsString,
+  MinLength,
+} from 'class-validator';
 import { Role } from '@/common/enums/role.enum';
+import { IsIranianNationalId } from '@/common/validators/is-national-id.validator';
 
 export class UpdateUserDto {
   @ApiPropertyOptional({ example: 'customer@example.com' })
@@ -28,6 +37,17 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   phone?: string;
+
+  @ApiPropertyOptional({ example: '0012345678', description: '10-digit Iranian National ID' })
+  @IsOptional()
+  @IsString()
+  @IsIranianNationalId()
+  nationalId?: string;
+
+  @ApiPropertyOptional({ example: '1990-05-15T00:00:00.000Z', description: 'Birth date in Gregorian ISO format' })
+  @IsOptional()
+  @IsDateString({}, { message: 'تاریخ تولد باید با فرمت معتبر میلادی (ISO) ارسال شود' })
+  birthDate?: string;
 
   @ApiPropertyOptional({ enum: Role })
   @IsOptional()

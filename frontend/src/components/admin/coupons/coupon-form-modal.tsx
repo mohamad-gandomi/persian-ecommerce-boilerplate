@@ -31,8 +31,8 @@ export function CouponFormModal(props: CouponFormModalProps) {
   const [discountValue, setDiscountValue] = React.useState('');
   const [minOrderAmount, setMinOrderAmount] = React.useState('');
   const [maxDiscountAmount, setMaxDiscountAmount] = React.useState('');
-  const [startDate, setStartDate] = React.useState('');
-  const [endDate, setEndDate] = React.useState('');
+  const [startDate, setStartDate] = React.useState<Date | null>(null);
+  const [endDate, setEndDate] = React.useState<Date | null>(null);
   const [usageLimit, setUsageLimit] = React.useState('');
   const [isActive, setIsActive] = React.useState(true);
 
@@ -44,8 +44,8 @@ export function CouponFormModal(props: CouponFormModalProps) {
       setDiscountValue(String(editingCoupon.discountValue));
       setMinOrderAmount(editingCoupon.minOrderAmount ? String(editingCoupon.minOrderAmount) : '');
       setMaxDiscountAmount(editingCoupon.maxDiscountAmount ? String(editingCoupon.maxDiscountAmount) : '');
-      setStartDate(editingCoupon.startDate ? editingCoupon.startDate.substring(0, 10) : '');
-      setEndDate(editingCoupon.endDate ? editingCoupon.endDate.substring(0, 10) : '');
+      setStartDate(editingCoupon.startDate ? new Date(editingCoupon.startDate) : null);
+      setEndDate(editingCoupon.endDate ? new Date(editingCoupon.endDate) : null);
       setUsageLimit(editingCoupon.usageLimit ? String(editingCoupon.usageLimit) : '');
       setIsActive(editingCoupon.isActive);
     } else {
@@ -55,8 +55,8 @@ export function CouponFormModal(props: CouponFormModalProps) {
       setDiscountValue('10');
       setMinOrderAmount('');
       setMaxDiscountAmount('');
-      setStartDate('');
-      setEndDate('');
+      setStartDate(null);
+      setEndDate(null);
       setUsageLimit('');
       setIsActive(true);
     }
@@ -72,8 +72,8 @@ export function CouponFormModal(props: CouponFormModalProps) {
       discountValue: val,
       minOrderAmount: minOrderAmount ? parseFloat(minOrderAmount) : null,
       maxDiscountAmount: maxDiscountAmount ? parseFloat(maxDiscountAmount) : null,
-      startDate: startDate ? new Date(startDate + 'T00:00:00.000Z').toISOString() : null,
-      endDate: endDate ? new Date(endDate + 'T23:59:59.999Z').toISOString() : null,
+      startDate: startDate ? startDate.toISOString() : null,
+      endDate: endDate ? endDate.toISOString() : null,
       usageLimit: usageLimit ? parseInt(usageLimit, 10) : null,
       isActive,
     });

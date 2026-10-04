@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { User } from '@/types';
 import { formatDate } from '@/lib/utils';
+import { toPersianDigits, formatJalali } from '@/lib/jalali';
 
 interface UsersTableProps {
   users: User[];
@@ -58,15 +59,26 @@ export function UsersTable({
                           <div className="font-bold text-foreground group-hover/row:text-primary transition-colors block truncate">
                             {user.firstName} {user.lastName}
                           </div>
-                          <span className="text-xs text-muted-foreground block truncate font-sans dir-ltr text-right">
-                            {user.email}
-                          </span>
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground truncate">
+                            <span className="font-sans dir-ltr text-right">{user.email}</span>
+                            {user.nationalId && (
+                              <>
+                                <span>•</span>
+                                <span className="font-sans text-[11px] text-foreground/80">کد ملی: {toPersianDigits(user.nationalId)}</span>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4 text-xs text-muted-foreground font-sans dir-ltr text-right">
-                      {user.phone || '—'}
+                    <td className="py-3.5 px-4 text-xs font-sans">
+                      <div className="text-muted-foreground dir-ltr text-right">{user.phone || '—'}</div>
+                      {user.birthDate && (
+                        <div className="text-[11px] text-muted-foreground/75 mt-0.5">
+                          تولد: {formatJalali(user.birthDate, 'short')}
+                        </div>
+                      )}
                     </td>
 
                     <td className="py-3.5 px-4">

@@ -4,7 +4,8 @@ import * as React from 'react';
 import { Copy, Check, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
+import { formatJalali } from '@/lib/jalali';
 import { Coupon } from '@/types';
 
 interface CouponsMobileListProps {
@@ -58,7 +59,7 @@ export function CouponsMobileList(props: CouponsMobileListProps) {
           </div>
 
           <div className="flex items-center justify-between pt-2 border-t border-border/40 text-[11px] text-muted-foreground">
-            <span>{coupon.endDate ? `معتبر تا ${formatDate(coupon.endDate)}` : 'اعتبار نامحدود'}</span>
+            <span>{coupon.endDate ? `معتبر تا ${formatJalali(coupon.endDate, 'short')}` : 'اعتبار نامحدود'}</span>
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" onClick={() => onEdit(coupon)} title="ویرایش">
                 <Pencil className="w-3.5 h-3.5" />

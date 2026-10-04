@@ -29,6 +29,8 @@ export class UsersService {
           firstName: true,
           lastName: true,
           phone: true,
+          nationalId: true,
+          birthDate: true,
           role: true,
           isActive: true,
           createdAt: true,
@@ -62,6 +64,8 @@ export class UsersService {
         firstName: true,
         lastName: true,
         phone: true,
+        nationalId: true,
+        birthDate: true,
         role: true,
         isActive: true,
         createdAt: true,
@@ -90,6 +94,16 @@ export class UsersService {
       throw new ConflictException('An account with this email address already exists.');
     }
 
+    const cleanNationalId = dto.nationalId?.trim() || null;
+    if (cleanNationalId) {
+      const existingNational = await this.prisma.user.findFirst({
+        where: { nationalId: cleanNationalId },
+      });
+      if (existingNational) {
+        throw new ConflictException('کاربری با این کد ملی قبلاً در سیستم ثبت شده است.');
+      }
+    }
+
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(dto.password, salt);
 
@@ -100,6 +114,8 @@ export class UsersService {
         firstName: dto.firstName.trim(),
         lastName: dto.lastName.trim(),
         phone: dto.phone?.trim() || null,
+        nationalId: cleanNationalId,
+        birthDate: dto.birthDate ? new Date(dto.birthDate) : null,
         role: dto.role || Role.CUSTOMER,
         isActive: dto.isActive ?? true,
       },
@@ -109,6 +125,8 @@ export class UsersService {
         firstName: true,
         lastName: true,
         phone: true,
+        nationalId: true,
+        birthDate: true,
         role: true,
         isActive: true,
         createdAt: true,
@@ -130,10 +148,24 @@ export class UsersService {
       }
     }
 
+    if (dto.nationalId !== undefined) {
+      const cleanNationalId = dto.nationalId?.trim() || null;
+      if (cleanNationalId && cleanNationalId !== (user as any).nationalId) {
+        const existingNational = await this.prisma.user.findFirst({
+          where: { nationalId: cleanNationalId, NOT: { id } },
+        });
+        if (existingNational) {
+          throw new ConflictException('کاربری با این کد ملی قبلاً در سیستم ثبت شده است.');
+        }
+      }
+    }
+
     const data: any = {
       firstName: dto.firstName?.trim(),
       lastName: dto.lastName?.trim(),
       phone: dto.phone !== undefined ? (dto.phone?.trim() || null) : undefined,
+      nationalId: dto.nationalId !== undefined ? (dto.nationalId?.trim() || null) : undefined,
+      birthDate: dto.birthDate !== undefined ? (dto.birthDate ? new Date(dto.birthDate) : null) : undefined,
       role: dto.role,
       isActive: dto.isActive,
     };
@@ -156,6 +188,8 @@ export class UsersService {
         firstName: true,
         lastName: true,
         phone: true,
+        nationalId: true,
+        birthDate: true,
         role: true,
         isActive: true,
         createdAt: true,

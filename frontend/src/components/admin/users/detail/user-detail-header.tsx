@@ -6,6 +6,7 @@ import { ArrowRight, Trash2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { User } from '@/types';
+import { toPersianDigits, formatJalali } from '@/lib/jalali';
 
 interface UserDetailHeaderProps {
   user: User;
@@ -82,12 +83,24 @@ export function UserDetailHeader({
           )}
         </div>
 
-        <div className="flex items-center gap-2.5 text-[11px] text-muted-foreground font-sans shrink-0 dir-ltr text-right">
-          <span>ایمیل: <strong className="text-foreground">{user.email}</strong></span>
+        <div className="flex flex-wrap items-center gap-2.5 text-[11px] text-muted-foreground font-sans shrink-0">
+          <span>ایمیل: <strong className="text-foreground dir-ltr">{user.email}</strong></span>
           {user.phone && (
             <>
               <span>•</span>
-              <span>{user.phone}</span>
+              <span>تلفن: <strong className="text-foreground dir-ltr">{user.phone}</strong></span>
+            </>
+          )}
+          {user.nationalId && (
+            <>
+              <span>•</span>
+              <span>کد ملی: <strong className="text-foreground">{toPersianDigits(user.nationalId)}</strong></span>
+            </>
+          )}
+          {user.birthDate && (
+            <>
+              <span>•</span>
+              <span>تاریخ تولد: <strong className="text-foreground">{formatJalali(user.birthDate, 'long')}</strong></span>
             </>
           )}
         </div>

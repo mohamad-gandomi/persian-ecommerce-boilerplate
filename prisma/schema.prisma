@@ -93,6 +93,8 @@ model User {
   firstName    String
   lastName     String
   phone        String?
+  nationalId   String?    @unique @db.VarChar(10)
+  birthDate    DateTime?
   role         Role       @default(CUSTOMER)
   isActive     Boolean    @default(true)
   addresses     Address[]

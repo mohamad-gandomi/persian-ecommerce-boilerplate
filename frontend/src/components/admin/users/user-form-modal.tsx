@@ -4,6 +4,9 @@ import * as React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PersianDatePicker } from '@/components/ui/persian-date-picker';
+import { isValidIranianNationalId, toEnglishDigits } from '@/lib/jalali';
+import { toast } from 'sonner';
 import { User, Role } from '@/types';
 
 interface UserFormModalProps {
@@ -27,6 +30,8 @@ export function UserFormModal({
   const [lastName, setLastName] = React.useState('');
   const [email, setEmail] = React.useState('');
   const [phone, setPhone] = React.useState('');
+  const [nationalId, setNationalId] = React.useState('');
+  const [birthDate, setBirthDate] = React.useState<Date | null>(null);
   const [password, setPassword] = React.useState('');
   const [role, setRole] = React.useState<Role>('CUSTOMER');
   const [isActive, setIsActive] = React.useState(true);
@@ -38,6 +43,8 @@ export function UserFormModal({
         setLastName(user.lastName || '');
         setEmail(user.email || '');
         setPhone(user.phone || '');
+        setNationalId(user.nationalId || '');
+        setBirthDate(user.birthDate ? new Date(user.birthDate) : null);
         setPassword('');
         setRole(user.role || 'CUSTOMER');
         setIsActive(user.isActive ?? true);
@@ -46,6 +53,8 @@ export function UserFormModal({
         setLastName('');
         setEmail('');
         setPhone('');
+        setNationalId('');
+        setBirthDate(null);
         setPassword('');
         setRole('CUSTOMER');
         setIsActive(true);
@@ -58,11 +67,19 @@ export function UserFormModal({
     if (!firstName.trim() || !lastName.trim() || !email.trim()) return;
     if (mode === 'CREATE' && !password.trim()) return;
 
+    const cleanNational = nationalId.trim();
+    if (cleanNational && !isValidIranianNationalId(cleanNational)) {
+      toast.error('کد ملی وارد شده طبق الگوریتم رسمی نامعتبر است (باید ۱۰ رقم معتبر باشد)');
+      return;
+    }
+
     const payload: any = {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       email: email.trim().toLowerCase(),
       phone: phone.trim() || undefined,
+      nationalId: cleanNational || (mode === 'EDIT' ? null : undefined),
+      birthDate: birthDate ? birthDate.toISOString() : (mode === 'EDIT' ? null : undefined),
       role,
       isActive,
     };
@@ -133,6 +150,31 @@ export function UserFormModal({
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 className="text-xs w-full text-left dir-ltr font-sans"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full min-w-0">
+            <div className="space-y-1.5 min-w-0 text-right">
+              <label className="text-xs font-semibold text-foreground">کد ملی (۱۰ رقم)</label>
+              <Input
+                placeholder="مثال: ۰۰۱۲۳۴۵۶۷۸"
+                maxLength={10}
+                value={nationalId}
+                onChange={(e) => setNationalId(toEnglishDigits(e.target.value).replace(/\D/g, ''))}
+                className="text-xs w-full text-left dir-ltr font-sans"
+              />
+            </div>
+
+            <div className="space-y-1.5 min-w-0 text-right">
+              <label className="text-xs font-semibold text-foreground">تاریخ تولد (شمسی)</label>
+              <PersianDatePicker
+                value={birthDate}
+                onChange={(d) => setBirthDate(d)}
+                maxDate={new Date()}
+                placeholder="انتخاب تاریخ تولد..."
+                startYear={1320}
+                endYear={1405}
               />
             </div>
           </div>

@@ -13,7 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
+import { formatJalali } from '@/lib/jalali';
 import { Coupon } from '@/types';
 
 interface CouponsTableProps {
@@ -55,8 +56,8 @@ export function CouponsTable(props: CouponsTableProps) {
     }
     if (end) {
       return (
-        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-          <Calendar className="w-3 h-3" /> تا {formatDate(end)}
+        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 font-sans">
+          <Calendar className="w-3 h-3" /> تا {formatJalali(end, 'short')}
         </span>
       );
     }

@@ -6,7 +6,8 @@ import { Tag } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
+import { formatJalali } from '@/lib/jalali';
 import { Coupon } from '@/types';
 
 interface DashboardPromosCardProps {
@@ -63,8 +64,8 @@ export function DashboardPromosCard({ couponsLoading, activeCoupons }: Dashboard
                     <span className="font-sans font-bold text-primary">{c.code}</span>
                     <span className="text-[10px] text-muted-foreground font-sans">({c.usageCount} بار استفاده)</span>
                   </div>
-                  <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                    {c.endDate ? `معتبر تا ${formatDate(c.endDate)}` : 'بدون محدودیت زمانی'}
+                  <div className="text-[11px] text-muted-foreground mt-0.5 truncate font-sans">
+                    {c.endDate ? `معتبر تا ${formatJalali(c.endDate, 'short')}` : 'بدون محدودیت زمانی'}
                   </div>
                 </div>
                 <Badge variant="wood" className="text-[10px] shrink-0 font-sans">

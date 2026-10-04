@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Input } from '@/components/ui/input';
+import { PersianDatePicker } from '@/components/ui/persian-date-picker';
 import { DiscountType } from '@/types';
 
 interface CouponFormFieldsProps {
@@ -11,8 +12,8 @@ interface CouponFormFieldsProps {
   discountValue: string; setDiscountValue: (v: string) => void;
   minOrderAmount: string; setMinOrderAmount: (v: string) => void;
   maxDiscountAmount: string; setMaxDiscountAmount: (v: string) => void;
-  startDate: string; setStartDate: (v: string) => void;
-  endDate: string; setEndDate: (v: string) => void;
+  startDate: Date | null; setStartDate: (v: Date | null) => void;
+  endDate: Date | null; setEndDate: (v: Date | null) => void;
   usageLimit: string; setUsageLimit: (v: string) => void;
   isActive: boolean; setIsActive: (v: boolean) => void;
 }
@@ -92,14 +93,27 @@ export function CouponFormFields(props: CouponFormFieldsProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1">
-          <label className="text-xs font-semibold text-foreground">تاریخ آغاز اعتبار</label>
-          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-9 text-xs font-sans" />
+          <label className="text-xs font-semibold text-foreground">تاریخ آغاز اعتبار (شمسی)</label>
+          <PersianDatePicker
+            value={startDate}
+            onChange={setStartDate}
+            placeholder="آغاز اعتبار (اختیاری)..."
+            startYear={1400}
+            endYear={1415}
+          />
         </div>
         <div className="space-y-1">
-          <label className="text-xs font-semibold text-foreground">تاریخ پایان اعتبار</label>
-          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-9 text-xs font-sans" />
+          <label className="text-xs font-semibold text-foreground">تاریخ پایان اعتبار (شمسی)</label>
+          <PersianDatePicker
+            value={endDate}
+            onChange={setEndDate}
+            minDate={startDate || undefined}
+            placeholder="پایان اعتبار (اختیاری)..."
+            startYear={1400}
+            endYear={1415}
+          />
         </div>
       </div>
 

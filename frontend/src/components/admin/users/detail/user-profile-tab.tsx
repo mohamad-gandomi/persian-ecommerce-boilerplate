@@ -5,6 +5,8 @@ import { Pencil, UserCheck, ShieldCheck, KeyRound, Save } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PersianDatePicker } from '@/components/ui/persian-date-picker';
+import { toEnglishDigits } from '@/lib/jalali';
 import { Role } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -17,6 +19,10 @@ interface UserProfileTabProps {
   setEmail: (val: string) => void;
   phone: string;
   setPhone: (val: string) => void;
+  nationalId: string;
+  setNationalId: (val: string) => void;
+  birthDate: Date | null;
+  setBirthDate: (val: Date | null) => void;
   role: Role;
   setRole: (val: Role) => void;
   password: string;
@@ -34,6 +40,10 @@ export function UserProfileTab({
   setEmail,
   phone,
   setPhone,
+  nationalId,
+  setNationalId,
+  birthDate,
+  setBirthDate,
   role,
   setRole,
   password,
@@ -96,6 +106,31 @@ export function UserProfileTab({
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 className="text-xs text-left dir-ltr font-sans"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5 text-right">
+              <label className="text-xs font-semibold text-foreground">کد ملی (۱۰ رقم)</label>
+              <Input
+                placeholder="مثال: ۰۰۱۲۳۴۵۶۷۸"
+                maxLength={10}
+                value={nationalId}
+                onChange={(e) => setNationalId(toEnglishDigits(e.target.value).replace(/\D/g, ''))}
+                className="text-xs text-left dir-ltr font-sans"
+              />
+            </div>
+
+            <div className="space-y-1.5 text-right">
+              <label className="text-xs font-semibold text-foreground">تاریخ تولد (شمسی)</label>
+              <PersianDatePicker
+                value={birthDate}
+                onChange={(d) => setBirthDate(d)}
+                maxDate={new Date()}
+                placeholder="انتخاب تاریخ تولد..."
+                startYear={1320}
+                endYear={1405}
               />
             </div>
           </div>

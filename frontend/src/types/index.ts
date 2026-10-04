@@ -9,6 +9,8 @@ export interface User {
   firstName: string;
   lastName: string;
   phone?: string | null;
+  nationalId?: string | null;
+  birthDate?: string | null;
   role: Role;
   isActive: boolean;
   createdAt: string;

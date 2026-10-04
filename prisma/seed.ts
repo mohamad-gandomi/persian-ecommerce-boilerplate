@@ -76,6 +76,8 @@ async function main() {
       lastName: 'Admin',
       phone: '+1 555-0199',
       role: Role.ADMIN,
+      nationalId: '0010350810',
+      birthDate: new Date('1990-03-21T00:00:00.000Z'),
     },
   });
 
@@ -87,6 +89,8 @@ async function main() {
       lastName: 'Wright',
       phone: '+1 555-0245',
       role: Role.CUSTOMER,
+      nationalId: '0499370856',
+      birthDate: new Date('1988-07-15T00:00:00.000Z'),
       addresses: {
         create: [
           {
@@ -113,6 +117,8 @@ async function main() {
       lastName: 'Vance',
       phone: '+1 555-0812',
       role: Role.CUSTOMER,
+      nationalId: '1270425897',
+      birthDate: new Date('1995-11-20T00:00:00.000Z'),
       addresses: {
         create: [
           {
@@ -139,6 +145,8 @@ async function main() {
       lastName: 'Chen',
       phone: '+1 555-0934',
       role: Role.CUSTOMER,
+      nationalId: '0082146901',
+      birthDate: new Date('2001-01-05T00:00:00.000Z'),
       addresses: {
         create: [
           {

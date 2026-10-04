@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { User } from '@/types';
 import { formatDate } from '@/lib/utils';
+import { toPersianDigits, formatJalali } from '@/lib/jalali';
 
 interface UsersMobileListProps {
   users: User[];
@@ -71,6 +72,18 @@ export function UsersMobileList({
                 </span>
               </div>
             </div>
+
+            {(user.nationalId || user.birthDate) && (
+              <div className="flex items-center gap-2 pt-1 text-[11px] text-muted-foreground font-sans">
+                {user.nationalId && (
+                  <span>کد ملی: <strong className="text-foreground">{toPersianDigits(user.nationalId)}</strong></span>
+                )}
+                {user.nationalId && user.birthDate && <span>•</span>}
+                {user.birthDate && (
+                  <span>تولد: <strong className="text-foreground">{formatJalali(user.birthDate, 'short')}</strong></span>
+                )}
+              </div>
+            )}
 
             {/* Card Footer: Status Indicator + Joined Date + Actions */}
             <div className="flex items-center justify-between pt-2 border-t border-border/60 text-[11px] text-muted-foreground">
