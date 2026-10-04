@@ -11,7 +11,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { ProductStatus, ProductType } from '@prisma/client';
+import { ProductStatus, ProductType, RewardType } from '@prisma/client';
 import { CreateVariantDto } from './create-variant.dto';
 
 export class ProductImageDto {
@@ -172,4 +172,19 @@ export class CreateProductDto {
   @IsOptional()
   @IsArray()
   specifications?: Array<{ label: string; value: string }>;
+
+  @ApiPropertyOptional({ enum: RewardType, default: RewardType.INHERIT })
+  @IsOptional()
+  @IsEnum(RewardType)
+  rewardType?: RewardType;
+
+  @ApiPropertyOptional({ description: 'Referrer reward value override (amount or %)', example: 10 })
+  @IsOptional()
+  @IsNumber()
+  referrerRewardValue?: number;
+
+  @ApiPropertyOptional({ description: 'Referee/buyer reward value override (amount or %)', example: 15000 })
+  @IsOptional()
+  @IsNumber()
+  refereeRewardValue?: number;
 }

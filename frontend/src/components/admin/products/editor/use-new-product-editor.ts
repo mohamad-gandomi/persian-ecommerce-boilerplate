@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { MediaItem } from '@/types';
+import { SpecificationItem } from '@/components/admin/products/specifications/product-specifications-tab';
 
 export function useNewProductEditor() {
   const router = useRouter();
@@ -30,7 +31,11 @@ export function useNewProductEditor() {
     featured: false,
     status: 'PUBLISHED' as 'PUBLISHED' | 'DRAFT' | 'ARCHIVED',
     categoryId: '',
+    rewardType: 'INHERIT' as 'INHERIT' | 'PERCENTAGE' | 'FIXED' | 'DISABLED',
+    referrerRewardValue: '',
+    refereeRewardValue: '',
     images: [] as Array<{ url: string; altText?: string | null; isPrimary: boolean; displayOrder: number }>,
+    specifications: [] as SpecificationItem[],
   });
 
   const generateSlug = (t: string) => t.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '');
@@ -67,6 +72,10 @@ export function useNewProductEditor() {
       featured: formData.featured,
       status: formData.status,
       categoryId: formData.categoryId || null,
+      rewardType: formData.rewardType,
+      referrerRewardValue: formData.referrerRewardValue ? parseFloat(formData.referrerRewardValue) : null,
+      refereeRewardValue: formData.refereeRewardValue ? parseFloat(formData.refereeRewardValue) : null,
+      specifications: (formData.specifications || []).map((s) => ({ label: s.label, value: s.value })),
       images: formData.images.length > 0 ? formData.images.map((img, i) => ({
         url: img.url,
         altText: img.altText || null,

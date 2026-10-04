@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { Image as ImageIcon, Star, Layers, Pencil, Trash2 } from 'lucide-react';
+import { Image as ImageIcon, Star, Layers, Pencil, Trash2, Gift } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Product } from '@/types';
@@ -80,6 +80,20 @@ export function ProductsMobileList({
                 >
                   {product.productType === 'VARIABLE' ? 'متغیر' : 'ساده'}
                 </Badge>
+
+                {product.rewardType === 'PERCENTAGE' && product.referrerRewardValue && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border border-indigo-200/70 whitespace-nowrap">
+                    <Gift className="w-2.5 h-2.5 text-indigo-600 dark:text-indigo-400" />
+                    <span>{product.referrerRewardValue}٪ پاداش</span>
+                  </span>
+                )}
+
+                {product.rewardType === 'FIXED' && product.referrerRewardValue && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border border-indigo-200/70 whitespace-nowrap">
+                    <Gift className="w-2.5 h-2.5 text-indigo-600 dark:text-indigo-400" />
+                    <span>{formatCurrency(product.referrerRewardValue)}</span>
+                  </span>
+                )}
 
                 {product.productType === 'VARIABLE' ? (
                   <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-amber-50/80 text-amber-800 border border-amber-200 whitespace-nowrap font-sans">

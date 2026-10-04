@@ -29,6 +29,9 @@ export function useProductEditor(productId: string, product?: Product) {
     featured: false,
     status: 'PUBLISHED' as 'PUBLISHED' | 'DRAFT' | 'ARCHIVED',
     categoryId: '',
+    rewardType: 'INHERIT' as 'INHERIT' | 'PERCENTAGE' | 'FIXED' | 'DISABLED',
+    referrerRewardValue: '',
+    refereeRewardValue: '',
     images: [] as Array<{ url: string; altText?: string | null; isPrimary: boolean; displayOrder: number }>,
     specifications: [] as SpecificationItem[],
   });
@@ -54,6 +57,9 @@ export function useProductEditor(productId: string, product?: Product) {
       featured: product.featured || false,
       status: product.status || 'PUBLISHED',
       categoryId: product.categoryId || '',
+      rewardType: (product.rewardType as any) || 'INHERIT',
+      referrerRewardValue: product.referrerRewardValue !== null && product.referrerRewardValue !== undefined ? String(product.referrerRewardValue) : '',
+      refereeRewardValue: product.refereeRewardValue !== null && product.refereeRewardValue !== undefined ? String(product.refereeRewardValue) : '',
       images: (product.images || []).map((img, i) => ({
         url: img.url,
         altText: img.altText || '',
@@ -128,6 +134,9 @@ export function useProductEditor(productId: string, product?: Product) {
       featured: formData.featured,
       status: formData.status,
       categoryId: formData.categoryId || null,
+      rewardType: formData.rewardType,
+      referrerRewardValue: formData.referrerRewardValue ? parseFloat(formData.referrerRewardValue) : null,
+      refereeRewardValue: formData.refereeRewardValue ? parseFloat(formData.refereeRewardValue) : null,
       images: formData.images.map((img, i) => ({
         url: img.url,
         altText: img.altText || null,

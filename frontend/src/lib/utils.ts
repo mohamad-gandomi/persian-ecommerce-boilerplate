@@ -20,6 +20,19 @@ export function formatDate(dateString: string | null | undefined): string {
   }).format(new Date(dateString));
 }
 
+export function formatDateTime(dateString: string | null | undefined): string {
+  if (!dateString) return '-';
+  const d = new Date(dateString);
+  return `${new Intl.DateTimeFormat('fa-IR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(d)} ساعت ${new Intl.DateTimeFormat('fa-IR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(d)}`;
+}
+
 export function formatPaymentMethod(method?: string): string {
   if (!method) return 'پرداخت آنلاین';
   const upper = method.toUpperCase();

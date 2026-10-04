@@ -9,7 +9,9 @@ import { ShippingService } from '@/modules/shipping/shipping.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { FilterOrdersDto } from './dto/filter-orders.dto';
-import { OrderStatus, PaymentStatus, TransactionStatus, Role } from '@prisma/client';
+import { OrderStatus, PaymentStatus, TransactionStatus, Role, WalletTransactionType } from '@prisma/client';
+import { WalletService } from '@/modules/wallet/wallet.service';
+import { ReferralService } from '@/modules/referral/referral.service';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
@@ -18,6 +20,8 @@ export class OrdersService {
     private prisma: PrismaService,
     private couponsService: CouponsService,
     private shippingService: ShippingService,
+    private walletService: WalletService,
+    private referralService: ReferralService,
   ) {}
 
   async findAll(filters: FilterOrdersDto) {
@@ -431,6 +435,63 @@ export class OrdersService {
     const orderCount = await this.prisma.order.count();
     const orderNumber = `SW-${1000 + orderCount + 1}`;
 
+    // Resolve referral association if applicable
+    let referralId: string | null = null;
+    if (resolvedUserId) {
+      if (dto.referralCode) {
+        try {
+          const bound = await this.referralService.bindReferee(resolvedUserId, dto.referralCode);
+          if (bound) referralId = bound.id;
+        } catch {
+          // If code is invalid or self-referral, proceed without breaking checkout
+        }
+      }
+      if (!referralId) {
+        const existingRef = await this.prisma.referral.findUnique({
+          where: { refereeId: resolvedUserId },
+        });
+        if (existingRef) referralId = existingRef.id;
+      }
+    }
+
+    // Wallet balance payment / partial payment
+    let walletAmountPaid = 0;
+    let cashAmountPaid = totalAmount;
+    let initialPaymentStatus: PaymentStatus = PaymentStatus.PENDING;
+    let paidAt: Date | null = null;
+
+    if (dto.useWalletBalance && resolvedUserId) {
+      const walletInfo = await this.walletService.getBalance(resolvedUserId);
+      if (walletInfo.isActive && walletInfo.balance > 0) {
+        if (walletInfo.balance >= totalAmount) {
+          // Full payment via wallet
+          await this.walletService.debit({
+            userId: resolvedUserId,
+            amount: totalAmount,
+            type: WalletTransactionType.ORDER_PAYMENT,
+            description: `پرداخت کامل سفارش ${orderNumber} از موجودی کیف پول`,
+            referenceId: orderNumber,
+          });
+          walletAmountPaid = totalAmount;
+          cashAmountPaid = 0;
+          initialPaymentStatus = PaymentStatus.PAID;
+          paidAt = new Date();
+        } else {
+          // Partial payment via wallet
+          const partial = walletInfo.balance;
+          await this.walletService.debit({
+            userId: resolvedUserId,
+            amount: partial,
+            type: WalletTransactionType.ORDER_PARTIAL_PAYMENT,
+            description: `پرداخت بخشی از مبلغ سفارش ${orderNumber} از موجودی کیف پول`,
+            referenceId: orderNumber,
+          });
+          walletAmountPaid = partial;
+          cashAmountPaid = Math.round((totalAmount - partial) * 100) / 100;
+        }
+      }
+    }
+
     const order = await this.prisma.order.create({
       data: {
         orderNumber,
@@ -442,9 +503,13 @@ export class OrdersService {
             ? `${dto.customerPhone.replace(/\D/g, '')}@guest.store.internal`
             : `guest-${Date.now()}@guest.store.internal`),
         customerPhone: dto.customerPhone || null,
-        status: OrderStatus.PENDING,
-        paymentStatus: PaymentStatus.PENDING,
-        paymentMethod: dto.paymentMethod || 'CREDIT_CARD',
+        status: initialPaymentStatus === PaymentStatus.PAID ? OrderStatus.PROCESSING : OrderStatus.PENDING,
+        paymentStatus: initialPaymentStatus,
+        paymentMethod: walletAmountPaid === totalAmount ? 'WALLET' : dto.paymentMethod || 'CREDIT_CARD',
+        walletAmountPaid,
+        cashAmountPaid,
+        paidAt,
+        referralId,
         subtotal,
         discountAmount,
         shippingAmount,
@@ -464,9 +529,9 @@ export class OrdersService {
         transactions: {
           create: [
             {
-              gateway: dto.paymentMethod || 'CREDIT_CARD',
-              status: TransactionStatus.PENDING,
-              amount: totalAmount,
+              gateway: walletAmountPaid === totalAmount ? 'WALLET' : dto.paymentMethod || 'CREDIT_CARD',
+              status: initialPaymentStatus === PaymentStatus.PAID ? TransactionStatus.SUCCESS : TransactionStatus.PENDING,
+              amount: cashAmountPaid > 0 ? cashAmountPaid : totalAmount,
               currency: dto.currency || 'USD',
               errorMessage: null,
             },
@@ -476,7 +541,9 @@ export class OrdersService {
           create: [
             {
               status: OrderStatus.PENDING,
-              note: `Order ${orderNumber} placed via checkout. Total: $${totalAmount.toFixed(2)}`,
+              note: walletAmountPaid > 0
+                ? `سفارش ${orderNumber} ثبت شد. مبلغ ${walletAmountPaid.toLocaleString()} از کیف پول پرداخت شد.`
+                : `سفارش ${orderNumber} ثبت شد. مبلغ کل: ${totalAmount.toLocaleString()}`,
             },
           ],
         },
@@ -544,6 +611,43 @@ export class OrdersService {
         transactions: { orderBy: { createdAt: 'desc' } },
       },
     });
+
+    // 1. Release referral rewards when order is DELIVERED
+    if (newStatus === OrderStatus.DELIVERED) {
+      try {
+        await this.referralService.releaseOrderReward(order.id);
+      } catch (err) {
+        console.error('Failed to release referral reward for order', order.id, err);
+      }
+    }
+
+    // 2. Automatically refund wallet balance if order was cancelled or refunded
+    if (
+      (newStatus === OrderStatus.CANCELLED || newStatus === OrderStatus.REFUNDED) &&
+      Number(order.walletAmountPaid) > 0 &&
+      order.userId
+    ) {
+      const existingRefund = await this.prisma.walletTransaction.findFirst({
+        where: {
+          referenceId: order.orderNumber,
+          type: WalletTransactionType.REFUND,
+        },
+      });
+
+      if (!existingRefund) {
+        try {
+          await this.walletService.credit({
+            userId: order.userId,
+            amount: Number(order.walletAmountPaid),
+            type: WalletTransactionType.REFUND,
+            description: `استرداد وجه کیف پول بابت لغو سفارش ${order.orderNumber}`,
+            referenceId: order.orderNumber,
+          });
+        } catch (err) {
+          console.error('Failed to refund wallet balance for order', order.id, err);
+        }
+      }
+    }
 
     return updated;
   }

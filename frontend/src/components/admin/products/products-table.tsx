@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { Image as ImageIcon, Star, Layers, Pencil, Trash2 } from 'lucide-react';
+import { Image as ImageIcon, Star, Layers, Pencil, Trash2, Gift } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -27,11 +27,12 @@ export function ProductsTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[360px] text-right">محصول و شناسه</TableHead>
+              <TableHead className="w-[340px] text-right">محصول و شناسه</TableHead>
               <TableHead className="text-right">دسته‌بندی</TableHead>
               <TableHead className="text-right">نوع کالا</TableHead>
               <TableHead className="text-right">قیمت</TableHead>
               <TableHead className="text-right">موجودی</TableHead>
+              <TableHead className="text-right">پاداش معرفی</TableHead>
               <TableHead className="text-right">وضعیت</TableHead>
               <TableHead className="text-left">عملیات</TableHead>
             </TableRow>
@@ -139,6 +140,25 @@ export function ProductsTable({
                       >
                         {product.stockQuantity > 0 ? `${product.stockQuantity} در انبار` : 'ناموجود'}
                       </span>
+                    )}
+                  </TableCell>
+
+                  {/* Referral Reward */}
+                  <TableCell className="text-right font-sans">
+                    {product.rewardType === 'PERCENTAGE' && product.referrerRewardValue ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border border-indigo-200/70 whitespace-nowrap">
+                        <Gift className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+                        <span>{product.referrerRewardValue}٪ پاداش</span>
+                      </span>
+                    ) : product.rewardType === 'FIXED' && product.referrerRewardValue ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border border-indigo-200/70 whitespace-nowrap">
+                        <Gift className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+                        <span>{formatCurrency(product.referrerRewardValue)}</span>
+                      </span>
+                    ) : product.rewardType === 'DISABLED' ? (
+                      <span className="text-[11px] text-muted-foreground/60">بدون پاداش</span>
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground">پیش‌فرض سیستم</span>
                     )}
                   </TableCell>
 

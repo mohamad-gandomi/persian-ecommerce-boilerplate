@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Image as ImageIcon } from 'lucide-react';
+import Link from 'next/link';
+import { Image as ImageIcon, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { Header } from '@/components/admin/header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -128,17 +129,24 @@ export default function MediaLibraryPage() {
           onUploadClick={() => fileInputRef.current?.click()}
         />
 
-        <MediaOptimizationCard
-          convertToWebp={convertToWebp}
-          onToggleWebp={(c) => { setConvertToWebp(c); updateSettingsMutation.mutate({ convertToWebp: c }); }}
-          qualityPreset={qualityPreset}
-          onChangeQuality={(q) => { setQualityPreset(q); updateSettingsMutation.mutate({ qualityPreset: q }); }}
-          maxWidthOption={maxWidthOption}
-          onChangeMaxWidth={(w) => { setMaxWidthOption(w); updateSettingsMutation.mutate({ maxWidthOption: w }); }}
-          showOptions={showOptions}
-          onToggleShowOptions={() => { const n = !showOptions; setShowOptions(n); updateSettingsMutation.mutate({ showOptimizationOptions: n }); }}
-          isSaving={updateSettingsMutation.isPending}
-        />
+        {/* WebP Status Bar Linking to Centralized Settings */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:px-4 rounded-xl border border-emerald-200/80 dark:border-emerald-950/60 bg-emerald-50/40 dark:bg-emerald-950/15 text-xs font-sans">
+          <div className="flex items-center gap-2.5 text-foreground">
+            <span className={`w-2 h-2 rounded-full shrink-0 ${convertToWebp ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground'}`} />
+            <span className="font-semibold">
+              تبدیل خودکار WebP: {convertToWebp ? `فعال (کیفیت فشرده‌سازی ${qualityPreset}٪)` : 'غیرفعال'}
+            </span>
+            <span className="hidden md:inline text-muted-foreground">• حداکثر مقیاس عرض: {maxWidthOption}px</span>
+          </div>
+
+          <Link
+            href="/settings"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline shrink-0"
+          >
+            <Settings className="w-3.5 h-3.5" />
+            <span>مدیریت تنظیمات WebP در تنظیمات سامانه</span>
+          </Link>
+        </div>
 
         <MediaUploadDropzone onFilesSelected={handleFiles} fileInputRef={fileInputRef} isUploading={isUploading} />
 

@@ -59,6 +59,29 @@ enum DiscountType {
   FIXED_AMOUNT
 }
 
+enum WalletTransactionType {
+  DEPOSIT
+  ORDER_PAYMENT
+  ORDER_PARTIAL_PAYMENT
+  REFUND
+  REFERRAL_REWARD
+  CASHBACK
+  ADMIN_ADJUSTMENT
+}
+
+enum RewardType {
+  INHERIT
+  FIXED
+  PERCENTAGE
+  DISABLED
+}
+
+enum ReferralStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
 // ----------------------------------------------------
 // Users & Authentication
 // ----------------------------------------------------
@@ -72,11 +95,15 @@ model User {
   phone        String?
   role         Role       @default(CUSTOMER)
   isActive     Boolean    @default(true)
-  addresses    Address[]
-  blogPosts    BlogPost[]
-  orders       Order[]
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  addresses     Address[]
+  blogPosts     BlogPost[]
+  orders        Order[]
+  wallet        Wallet?
+  referralCode  ReferralCode?
+  referralsMade Referral[]     @relation("ReferrerUser")
+  referral      Referral?      @relation("RefereeUser")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@map("users")
 }
@@ -145,10 +172,13 @@ model Product {
   categoryId       String?
   category         Category?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   images           ProductImage[]
-  attributes       ProductAttribute[]
-  variants         ProductVariant[]
-  orderItems       OrderItem[]
-  createdAt        DateTime           @default(now())
+  attributes          ProductAttribute[]
+  variants            ProductVariant[]
+  orderItems          OrderItem[]
+  rewardType          RewardType         @default(INHERIT)
+  referrerRewardValue Decimal?           @db.Decimal(10, 2)
+  refereeRewardValue  Decimal?           @db.Decimal(10, 2)
+  createdAt           DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 
   @@map("products")
@@ -359,11 +389,15 @@ model Order {
   discountAmount  Decimal         @default(0) @db.Decimal(10, 2)
   shippingAmount  Decimal         @default(0) @db.Decimal(10, 2)
   taxAmount       Decimal         @default(0) @db.Decimal(10, 2)
-  totalAmount     Decimal         @db.Decimal(10, 2)
-  currency        String          @default("USD")
-  couponId        String?
-  coupon          Coupon?         @relation(fields: [couponId], references: [id], onDelete: SetNull)
-  couponCode      String?
+  totalAmount      Decimal            @db.Decimal(10, 2)
+  walletAmountPaid Decimal            @default(0) @db.Decimal(10, 2)
+  cashAmountPaid   Decimal            @default(0) @db.Decimal(10, 2)
+  currency         String             @default("USD")
+  couponId         String?
+  coupon           Coupon?            @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  couponCode       String?
+  referralId       String?
+  referral         Referral?          @relation(fields: [referralId], references: [id], onDelete: SetNull)
   shippingAddress Json            // { recipientName, phone, street, city, province, postalCode, country }
   billingAddress  Json?
   shippingMethod  String?            @default("Standard Freight")
@@ -473,4 +507,75 @@ model OtpVerification {
   @@map("otp_verifications")
 }
 
+// ----------------------------------------------------
+// Digital Wallet & Financial Ledger
+// ----------------------------------------------------
 
+model Wallet {
+  id           String              @id @default(uuid())
+  userId       String              @unique
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balance      Decimal             @default(0) @db.Decimal(12, 2)
+  currency     String              @default("IRT") // IRT (Toman), IRR (Rials)
+  isActive     Boolean             @default(true)
+  transactions WalletTransaction[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id            String                @id @default(uuid())
+  walletId      String
+  wallet        Wallet                @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  amount        Decimal               @db.Decimal(12, 2) // Positive for credit (+), negative for debit (-)
+  balanceBefore Decimal               @db.Decimal(12, 2)
+  balanceAfter  Decimal               @db.Decimal(12, 2)
+  type          WalletTransactionType
+  description   String?
+  referenceId   String?               // e.g. Order ID, Bank Tracking Code
+  createdAt     DateTime              @default(now())
+
+  @@index([walletId, createdAt])
+  @@map("wallet_transactions")
+}
+
+// ----------------------------------------------------
+// Referral System & Affiliate Program
+// ----------------------------------------------------
+
+model ReferralCode {
+  id                  String     @id @default(uuid())
+  code                String     @unique // e.g. "REF-8291" or custom "MOHAMAD"
+  ownerId             String     @unique
+  owner               User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  clickCount          Int        @default(0)
+  successfulReferrals Int        @default(0)
+  totalEarned         Decimal    @default(0) @db.Decimal(12, 2)
+  isActive            Boolean    @default(true)
+  referrals           Referral[]
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  @@map("referral_codes")
+}
+
+model Referral {
+  id                   String         @id @default(uuid())
+  referralCodeId       String
+  referralCode         ReferralCode   @relation(fields: [referralCodeId], references: [id], onDelete: Cascade)
+  referrerId           String
+  referrer             User           @relation("ReferrerUser", fields: [referrerId], references: [id], onDelete: Cascade)
+  refereeId            String         @unique
+  referee              User           @relation("RefereeUser", fields: [refereeId], references: [id], onDelete: Cascade)
+  status               ReferralStatus @default(PENDING)
+  rewardAmountReferrer Decimal?       @db.Decimal(10, 2)
+  rewardAmountReferee  Decimal?       @db.Decimal(10, 2)
+  rewardedAt           DateTime?
+  orders               Order[]
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  @@map("referrals")
+}

@@ -133,6 +133,9 @@ export interface Product {
   images?: ProductImage[];
   attributes?: ProductAttribute[];
   variants?: ProductVariant[];
+  rewardType?: 'INHERIT' | 'FIXED' | 'PERCENTAGE' | 'DISABLED';
+  referrerRewardValue?: number | string | null;
+  refereeRewardValue?: number | string | null;
   _count?: {
     variants?: number;
   };
@@ -336,10 +339,13 @@ export interface Order {
   shippingAmount: number | string;
   taxAmount: number | string;
   totalAmount: number | string;
+  walletAmountPaid?: number | string;
+  cashAmountPaid?: number | string;
   currency: string;
   couponId?: string | null;
   coupon?: Coupon | null;
   couponCode?: string | null;
+  referralId?: string | null;
   shippingAddress: OrderAddress;
   billingAddress?: OrderAddress | null;
   shippingMethod?: string | null;
@@ -396,5 +402,124 @@ export interface PaymentGatewayOption {
   currencies: string[];
   logo?: string;
   isActive: boolean;
+}
+
+// ----------------------------------------------------
+// Wallet & Financial Types
+// ----------------------------------------------------
+
+export type WalletTransactionType =
+  | 'DEPOSIT'
+  | 'ORDER_PAYMENT'
+  | 'ORDER_PARTIAL_PAYMENT'
+  | 'REFUND'
+  | 'REFERRAL_REWARD'
+  | 'CASHBACK'
+  | 'ADMIN_ADJUSTMENT';
+
+export interface WalletTransaction {
+  id: string;
+  walletId: string;
+  amount: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  type: WalletTransactionType;
+  description?: string | null;
+  referenceId?: string | null;
+  createdAt: string;
+  wallet?: {
+    user?: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone?: string | null;
+    };
+  };
+}
+
+export interface Wallet {
+  id: string;
+  userId: string;
+  balance: number;
+  currency: string;
+  isActive: boolean;
+  transactionsCount?: number;
+  user?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string | null;
+    role: Role;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ----------------------------------------------------
+// Referral & Rewards Types
+// ----------------------------------------------------
+
+export interface ReferralSettings {
+  enabled: boolean;
+  enableGlobalReward?: boolean;
+  defaultRewardType: 'FIXED' | 'PERCENTAGE';
+  defaultReferrerValue: number;
+  defaultRefereeValue: number;
+  minOrderAmount: number;
+  releaseOnStatus: string;
+  cookieDays: number;
+}
+
+export interface ReferralCodeInfo {
+  code: string;
+  clickCount: number;
+  successfulReferrals: number;
+  totalEarned: number;
+  isActive: boolean;
+  referralLink: string;
+  invitedUsers?: Array<{
+    id: string;
+    refereeName: string;
+    status: string;
+    rewardEarned: number;
+    joinedAt: string;
+  }>;
+}
+
+export interface ReferralItem {
+  id: string;
+  referralCodeId: string;
+  referrerId: string;
+  refereeId: string;
+  status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
+  rewardAmountReferrer?: number;
+  rewardAmountReferee?: number;
+  rewardedAt?: string | null;
+  createdAt: string;
+  referralCode?: {
+    code: string;
+  };
+  referrer?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string | null;
+  };
+  referee?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string | null;
+  };
+  orders?: Array<{
+    id: string;
+    orderNumber: string;
+    totalAmount: number | string;
+    status: string;
+  }>;
 }
 

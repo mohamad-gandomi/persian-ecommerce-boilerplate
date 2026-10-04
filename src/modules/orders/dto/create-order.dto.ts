@@ -130,4 +130,13 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   customerNotes?: string;
+
+  @ApiPropertyOptional({ description: 'Whether to deduct available balance from customer wallet', default: false })
+  @IsOptional()
+  useWalletBalance?: boolean;
+
+  @ApiPropertyOptional({ description: 'Optional referral code if introduced by a friend', example: 'REF-7A39' })
+  @IsOptional()
+  @IsString()
+  referralCode?: string;
 }

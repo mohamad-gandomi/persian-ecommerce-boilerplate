@@ -10,6 +10,9 @@ import {
   ShoppingBag,
   Tag,
   Truck,
+  Wallet,
+  Gift,
+  Settings,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -26,6 +29,16 @@ export const shopNavItems: NavItem[] = [
     title: 'سفارش‌ها',
     href: '/orders',
     icon: ShoppingBag,
+  },
+  {
+    title: 'کیف‌پول‌ها',
+    href: '/wallets',
+    icon: Wallet,
+  },
+  {
+    title: 'سیستم معرف و پاداش',
+    href: '/referrals',
+    icon: Gift,
   },
   {
     title: 'روش‌های ارسال',
@@ -56,6 +69,11 @@ export const shopNavItems: NavItem[] = [
     title: 'کاربران و مشتریان',
     href: '/users',
     icon: Users,
+  },
+  {
+    title: 'تنظیمات سامانه',
+    href: '/settings',
+    icon: Settings,
   },
 ];
 

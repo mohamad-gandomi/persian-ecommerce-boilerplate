@@ -17,6 +17,10 @@ async function main() {
   console.log('🌱 Starting e-commerce database seed...');
 
   // 1. Clean existing records in reverse dependency order
+  await prisma.walletTransaction.deleteMany();
+  await prisma.wallet.deleteMany();
+  await prisma.referral.deleteMany();
+  await prisma.referralCode.deleteMany();
   await prisma.orderTransaction.deleteMany();
   await prisma.orderTimeline.deleteMany();
   await prisma.orderItem.deleteMany();

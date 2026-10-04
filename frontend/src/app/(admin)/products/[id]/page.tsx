@@ -136,6 +136,12 @@ export default function ProductDetailPage() {
               onStockQuantityChange={(val) => setFormData({ ...formData, stockQuantity: val })}
               manageStock={formData.manageStock}
               onManageStockChange={(val) => setFormData({ ...formData, manageStock: val })}
+              rewardType={formData.rewardType}
+              onRewardTypeChange={(val) => setFormData({ ...formData, rewardType: val })}
+              referrerRewardValue={formData.referrerRewardValue}
+              onReferrerRewardValueChange={(val) => setFormData({ ...formData, referrerRewardValue: val })}
+              refereeRewardValue={formData.refereeRewardValue}
+              onRefereeRewardValueChange={(val) => setFormData({ ...formData, refereeRewardValue: val })}
             />
           </TabsContent>
 

@@ -13,6 +13,8 @@ import { CouponsModule } from '@/modules/coupons/coupons.module';
 import { ShippingModule } from '@/modules/shipping/shipping.module';
 import { PaymentsModule } from '@/modules/payments/payments.module';
 import { OrdersModule } from '@/modules/orders/orders.module';
+import { WalletModule } from '@/modules/wallet/wallet.module';
+import { ReferralModule } from '@/modules/referral/referral.module';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { OrdersModule } from '@/modules/orders/orders.module';
     ShippingModule,
     PaymentsModule,
     OrdersModule,
+    WalletModule,
+    ReferralModule,
   ],
 })
 export class AppModule {}

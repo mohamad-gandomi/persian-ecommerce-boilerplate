@@ -15,6 +15,11 @@ import {
   OrderTransaction,
   ShippingMethodOption,
   PaymentGatewayOption,
+  Wallet,
+  WalletTransaction,
+  ReferralSettings,
+  ReferralCodeInfo,
+  ReferralItem,
 } from '@/types';
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
@@ -670,4 +675,102 @@ export const api = {
 
   getOrderTransactions: (orderId: string) =>
     fetcher<OrderTransaction[]>(`/payments/transactions/${orderId}`),
+
+  // ----------------------------------------------------
+  // Wallet API
+  // ----------------------------------------------------
+  getMyWallet: () =>
+    fetcher<{ walletId: string; balance: number; currency: string; isActive: boolean }>('/wallet/me'),
+
+  getMyWalletTransactions: (limit = 50, offset = 0) =>
+    fetcher<{ transactions: WalletTransaction[]; total: number; walletBalance: number }>(
+      `/wallet/me/transactions?limit=${limit}&offset=${offset}`,
+    ),
+
+  getAdminWallets: (search?: string, limit = 20, offset = 0) => {
+    const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+    if (search) params.append('search', search);
+    return fetcher<{
+      wallets: Wallet[];
+      total: number;
+      stats: {
+        totalSystemBalance: number;
+        totalWalletsCount: number;
+        activeWalletsCount?: number;
+        totalTransactionsCount?: number;
+      };
+    }>(`/wallet/admin/list?${params.toString()}`);
+  },
+
+  getAdminWalletTransactions: (walletId?: string, limit = 30, offset = 0) => {
+    const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+    if (walletId) params.append('walletId', walletId);
+    return fetcher<{ transactions: WalletTransaction[]; total: number }>(
+      `/wallet/admin/transactions?${params.toString()}`,
+    );
+  },
+
+  adminAdjustWalletBalance: (userId: string, data: { amount: number; description: string }) =>
+    fetcher<{ success: boolean; balance: number; transaction: WalletTransaction }>(
+      `/wallet/admin/${userId}/adjust`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      },
+    ),
+
+  adminToggleWalletStatus: (userId: string, isActive: boolean) =>
+    fetcher<Wallet>(`/wallet/admin/${userId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isActive }),
+    }),
+
+  // ----------------------------------------------------
+  // Referral & Rewards API
+  // ----------------------------------------------------
+  getMyReferralInfo: () =>
+    fetcher<ReferralCodeInfo>('/referrals/me'),
+
+  customizeReferralCode: (code: string) =>
+    fetcher<{ success: boolean; code: string; referralLink: string }>('/referrals/me/customize', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    }),
+
+  trackReferralClick: (code: string) =>
+    fetcher<{ valid: boolean; code?: string }>(`/referrals/track/${code}`),
+
+  validateReferralCode: (code: string) =>
+    fetcher<{ valid: boolean; code: string; referrerName: string }>(`/referrals/validate/${code}`),
+
+  bindReferralCode: (code: string) =>
+    fetcher<{ id: string; referrerId: string; refereeId: string }>('/referrals/bind', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    }),
+
+  getAdminReferrals: (search?: string, status?: string, limit = 20, offset = 0) => {
+    const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+    if (search) params.append('search', search);
+    if (status && status !== 'ALL') params.append('status', status);
+    return fetcher<{
+      referrals: ReferralItem[];
+      total: number;
+      stats: {
+        totalCodes: number;
+        totalClicks: number;
+        totalSuccessfulReferrals: number;
+        totalRewardsPaid: number;
+      };
+    }>(`/referrals/admin/list?${params.toString()}`);
+  },
+
+  getAdminReferralSettings: () =>
+    fetcher<ReferralSettings>('/referrals/admin/settings'),
+
+  updateAdminReferralSettings: (data: Partial<ReferralSettings>) =>
+    fetcher<ReferralSettings>('/referrals/admin/settings', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
 };
