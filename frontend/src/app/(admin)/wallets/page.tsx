@@ -16,6 +16,7 @@ import {
   CreditCard,
   Users,
   ShieldCheck,
+  Clock,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Header } from '@/components/admin/header';
@@ -109,7 +110,31 @@ export default function WalletsPage() {
     },
   });
 
-  const getTransactionBadge = (type: WalletTransactionType) => {
+  const triggerExpiryMutation = useMutation({
+    mutationFn: () => api.triggerWalletExpiryCheck(),
+    onSuccess: (res) => {
+      if (res.expiredWalletsCount > 0) {
+        toast.success(
+          `بررسی انقضا انجام شد: ${res.expiredWalletsCount} کیف پول منقضی و مبلغ ${formatCurrency(res.totalExpiredAmount)} صفر گردید.`,
+        );
+      } else {
+        toast.info('بررسی انقضا انجام شد: هیچ کیف پولی منقضی نشد.');
+      }
+      queryClient.invalidateQueries({ queryKey: ['admin-wallets'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'خطا در بررسی انقضای کیف‌پول‌ها');
+    },
+  });
+
+  const getTransactionBadge = (type: WalletTransactionType, description?: string | null) => {
+    if (description?.includes('انقضا') || description?.includes('منقضی')) {
+      return (
+        <Badge variant="secondary" className="bg-rose-500/10 text-rose-600 border-rose-500/20">
+          انقضای موجودی
+        </Badge>
+      );
+    }
     switch (type) {
       case 'DEPOSIT':
         return <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">شارژ آنلاین</Badge>;
@@ -199,6 +224,15 @@ export default function WalletsPage() {
           >
             <RefreshCw className="w-3.5 h-3.5" />
             <span>به‌روزرسانی لیست</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => triggerExpiryMutation.mutate()}
+            disabled={triggerExpiryMutation.isPending}
+            className="h-10 text-xs font-semibold gap-2 border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 shadow-2xs font-sans"
+          >
+            <Clock className={`w-3.5 h-3.5 ${triggerExpiryMutation.isPending ? 'animate-spin' : ''}`} />
+            <span>{triggerExpiryMutation.isPending ? 'در حال بررسی...' : 'بررسی انقضای کیف‌پول‌ها'}</span>
           </Button>
         </div>
 
@@ -492,7 +526,7 @@ export default function WalletsPage() {
                       className="p-3.5 rounded-xl border border-border/70 bg-card shadow-2xs space-y-2.5 text-right font-sans"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        {getTransactionBadge(t.type)}
+                        {getTransactionBadge(t.type, t.description)}
                         <span className="text-[11px] text-muted-foreground font-sans dir-ltr">
                           {formatDateTime(t.createdAt)}
                         </span>
@@ -540,7 +574,7 @@ export default function WalletsPage() {
                     <TableBody>
                       {historyData.transactions.map((t) => (
                         <TableRow key={t.id} className="hover:bg-muted/30 transition-colors">
-                          <TableCell className="py-3">{getTransactionBadge(t.type)}</TableCell>
+                          <TableCell className="py-3">{getTransactionBadge(t.type, t.description)}</TableCell>
                           <TableCell className="py-3 text-xs text-foreground font-medium">
                             {t.description || '—'}
                           </TableCell>

@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { PrismaService } from '@/database/prisma.service';
 import { WalletTransactionType, Prisma } from '@prisma/client';
@@ -18,11 +19,22 @@ export interface WalletOperationParams {
 }
 
 @Injectable()
-export class WalletService {
+export class WalletService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
+
+  onModuleInit() {
+    // Initial check after boot, then check every 6 hours
+    setTimeout(() => {
+      this.checkAndExpireAllWallets().catch(() => {});
+    }, 10000);
+
+    setInterval(() => {
+      this.checkAndExpireAllWallets().catch(() => {});
+    }, 1000 * 60 * 60 * 6);
+  }
 
   /**
    * Returns existing wallet or creates one atomically if not found.
@@ -45,15 +57,195 @@ export class WalletService {
   }
 
   /**
+   * Retrieves wallet expiry settings from systemSettings.
+   */
+  async getWalletExpiryConfig(): Promise<{ enabled: boolean; days: number }> {
+    try {
+      const setting = await this.prisma.systemSetting.findUnique({
+        where: { key: 'referral_settings' },
+      });
+      const data = (setting?.value as any) || {};
+      return {
+        enabled: Boolean(data.walletExpiryEnabled),
+        days: Math.max(1, Number(data.walletExpiryDays) || 90),
+      };
+    } catch {
+      return { enabled: false, days: 90 };
+    }
+  }
+
+  /**
+   * Checks if an individual wallet has exceeded the expiry duration since its last credit/deposit.
+   * If expired, resets balance to 0 and records an expiration transaction in the ledger.
+   */
+  async checkAndExpireSingleWallet(wallet: any): Promise<any> {
+    const balanceNum = Number(wallet.balance);
+    if (balanceNum <= 0) return wallet;
+
+    const { enabled, days } = await this.getWalletExpiryConfig();
+    if (!enabled || days <= 0) return wallet;
+
+    // Find the latest credit transaction (amount > 0)
+    const lastCredit = await this.prisma.walletTransaction.findFirst({
+      where: {
+        walletId: wallet.id,
+        amount: { gt: 0 },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    });
+
+    const lastCreditDate = lastCredit ? lastCredit.createdAt : wallet.createdAt;
+    const now = new Date();
+    const diffMs = now.getTime() - lastCreditDate.getTime();
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+    if (diffDays >= days) {
+      const expiredAmountDecimal = new Prisma.Decimal(wallet.balance);
+
+      const [updatedWallet] = await this.prisma.$transaction([
+        this.prisma.wallet.update({
+          where: { id: wallet.id },
+          data: { balance: 0 },
+        }),
+        this.prisma.walletTransaction.create({
+          data: {
+            walletId: wallet.id,
+            amount: expiredAmountDecimal.negated(),
+            balanceBefore: expiredAmountDecimal,
+            balanceAfter: new Prisma.Decimal(0),
+            type: WalletTransactionType.ADMIN_ADJUSTMENT,
+            description: `انقضای موجودی کیف پول به دلیل عدم فعالیت پس از ${days} روز از آخرین واریز`,
+          },
+        }),
+      ]);
+
+      // Emit dedicated wallet.expired event and wallet.debited
+      this.prisma.user
+        .findUnique({
+          where: { id: wallet.userId },
+          select: { phone: true, firstName: true, lastName: true },
+        })
+        .then((user) => {
+          const customerName = user
+            ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'کاربر گرامی'
+            : 'کاربر گرامی';
+
+          this.eventEmitter.emit('wallet.expired', {
+            userId: wallet.userId,
+            amount: balanceNum,
+            days,
+            lastDepositDate: lastCreditDate.toLocaleDateString('fa-IR'),
+            userPhone: user?.phone,
+            customerName,
+          });
+
+          this.eventEmitter.emit('wallet.debited', {
+            userId: wallet.userId,
+            amount: balanceNum,
+            balanceAfter: 0,
+            description: `انقضای موجودی کیف پول به دلیل عدم فعالیت پس از ${days} روز از آخرین واریز`,
+            userPhone: user?.phone,
+          });
+        })
+        .catch(() => {});
+
+      return updatedWallet;
+    }
+
+    return wallet;
+  }
+
+  /**
+   * Scans all active wallets in the system with positive balance and expires those that exceeded inactivity threshold.
+   */
+  async checkAndExpireAllWallets(): Promise<{
+    success: boolean;
+    expiredWalletsCount: number;
+    totalExpiredAmount: number;
+    details: Array<{ walletId: string; userId: string; expiredAmount: number }>;
+  }> {
+    const { enabled, days } = await this.getWalletExpiryConfig();
+    if (!enabled || days <= 0) {
+      return {
+        success: true,
+        expiredWalletsCount: 0,
+        totalExpiredAmount: 0,
+        details: [],
+      };
+    }
+
+    const activeWallets = await this.prisma.wallet.findMany({
+      where: {
+        balance: { gt: 0 },
+        isActive: true,
+      },
+    });
+
+    let expiredWalletsCount = 0;
+    let totalExpiredAmount = 0;
+    const details: Array<{ walletId: string; userId: string; expiredAmount: number }> = [];
+
+    for (const wallet of activeWallets) {
+      const initialBalance = Number(wallet.balance);
+      const afterWallet = await this.checkAndExpireSingleWallet(wallet);
+      if (Number(afterWallet.balance) === 0 && initialBalance > 0) {
+        expiredWalletsCount++;
+        totalExpiredAmount += initialBalance;
+        details.push({
+          walletId: wallet.id,
+          userId: wallet.userId,
+          expiredAmount: initialBalance,
+        });
+      }
+    }
+
+    return {
+      success: true,
+      expiredWalletsCount,
+      totalExpiredAmount,
+      details,
+    };
+  }
+
+  /**
    * Get current wallet balance & status for a user.
    */
   async getBalance(userId: string) {
-    const wallet = await this.getOrCreateWallet(userId);
+    let wallet = await this.getOrCreateWallet(userId);
+    wallet = await this.checkAndExpireSingleWallet(wallet);
+
+    const { enabled, days } = await this.getWalletExpiryConfig();
+    let expiresAt: string | null = null;
+    let daysRemaining: number | null = null;
+
+    if (enabled && days > 0 && Number(wallet.balance) > 0) {
+      const lastCredit = await this.prisma.walletTransaction.findFirst({
+        where: {
+          walletId: wallet.id,
+          amount: { gt: 0 },
+        },
+        orderBy: { createdAt: 'desc' },
+        select: { createdAt: true },
+      });
+      const lastCreditDate = lastCredit ? lastCredit.createdAt : wallet.createdAt;
+      const expDate = new Date(lastCreditDate.getTime() + days * 24 * 60 * 60 * 1000);
+      expiresAt = expDate.toISOString();
+      const diffMs = expDate.getTime() - Date.now();
+      daysRemaining = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+    }
+
     return {
       walletId: wallet.id,
       balance: Number(wallet.balance),
       currency: wallet.currency,
       isActive: wallet.isActive,
+      expiryConfig: {
+        enabled,
+        days,
+        expiresAt,
+        daysRemaining,
+      },
     };
   }
 
@@ -61,7 +253,8 @@ export class WalletService {
    * Get paginated transaction history for a user.
    */
   async getTransactions(userId: string, limit = 50, offset = 0) {
-    const wallet = await this.getOrCreateWallet(userId);
+    let wallet = await this.getOrCreateWallet(userId);
+    wallet = await this.checkAndExpireSingleWallet(wallet);
 
     const [transactions, total] = await Promise.all([
       this.prisma.walletTransaction.findMany({
@@ -176,6 +369,14 @@ export class WalletService {
     const amountNum = Number(params.amount);
     if (amountNum <= 0) {
       throw new BadRequestException('مبلغ کسر از کیف پول باید بزرگتر از صفر باشد');
+    }
+
+    // Check and expire if inactive before attempting debit
+    const existingWallet = await this.prisma.wallet.findUnique({
+      where: { userId: params.userId },
+    });
+    if (existingWallet) {
+      await this.checkAndExpireSingleWallet(existingWallet);
     }
 
     const result = await this.prisma.$transaction(async (tx) => {

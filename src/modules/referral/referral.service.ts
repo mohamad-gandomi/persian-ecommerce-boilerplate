@@ -27,6 +27,8 @@ export const DEFAULT_REFERRAL_SETTINGS: UpdateReferralSettingsDto = {
   minOrderAmount: 100000, // 100,000 Toman min order
   releaseOnStatus: 'DELIVERED',
   cookieDays: 30,
+  walletExpiryEnabled: false,
+  walletExpiryDays: 90,
 };
 
 @Injectable()

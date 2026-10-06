@@ -79,4 +79,23 @@ export class UpdateReferralSettingsDto {
   @IsNumber()
   @Min(1)
   cookieDays?: number;
+
+  @ApiProperty({
+    description: 'Whether wallet balances have an expiration policy',
+    default: false,
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  walletExpiryEnabled?: boolean;
+
+  @ApiProperty({
+    description: 'Number of days of inactivity after the last deposit before the wallet balance expires and resets to zero',
+    default: 90,
+    required: false,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  walletExpiryDays?: number;
 }

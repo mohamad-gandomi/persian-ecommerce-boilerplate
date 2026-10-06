@@ -144,6 +144,12 @@ export const EVENT_PLACEHOLDERS: Record<string, EventPlaceholder[]> = {
     { key: 'transactionId', label: 'شناسه پیگیری تراکنش', example: 'TRX-84911' },
     { key: 'date', label: 'تاریخ تراکنش', example: '۱۴۰۵/۰۷/۱۵' },
   ],
+  wallet_expired: [
+    { key: 'amount', label: 'مبلغ منقضی‌شده (تومان)', example: '۱۵۰,۰۰۰' },
+    { key: 'days', label: 'تعداد روزهای عدم فعالیت', example: '۹۰' },
+    { key: 'lastDepositDate', label: 'تاریخ آخرین واریزی', example: '۱۴۰۵/۰۴/۱۵' },
+    { key: 'customerName', label: 'نام خریدار / کاربر', example: 'محمد رضایی' },
+  ],
   inventory_low_stock: [
     { key: 'productName', label: 'نام محصول', example: 'صندلی ناهارخوری چوبی راش' },
     { key: 'sku', label: 'کد انبارداری (SKU)', example: 'CHAIR-BEECH-01' },
@@ -937,6 +943,16 @@ export const api = {
     fetcher<Wallet>(`/wallet/admin/${userId}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ isActive }),
+    }),
+
+  triggerWalletExpiryCheck: () =>
+    fetcher<{
+      success: boolean;
+      expiredWalletsCount: number;
+      totalExpiredAmount: number;
+      details: Array<{ walletId: string; userId: string; expiredAmount: number }>;
+    }>('/wallet/admin/expire-check', {
+      method: 'POST',
     }),
 
   // ----------------------------------------------------

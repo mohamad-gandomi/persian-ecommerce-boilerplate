@@ -457,6 +457,12 @@ export interface Wallet {
   };
   createdAt: string;
   updatedAt: string;
+  expiryConfig?: {
+    enabled: boolean;
+    days: number;
+    expiresAt?: string | null;
+    daysRemaining?: number | null;
+  };
 }
 
 // ----------------------------------------------------
@@ -472,6 +478,8 @@ export interface ReferralSettings {
   minOrderAmount: number;
   releaseOnStatus: string;
   cookieDays: number;
+  walletExpiryEnabled?: boolean;
+  walletExpiryDays?: number;
 }
 
 export interface ReferralCodeInfo {

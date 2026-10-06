@@ -107,6 +107,12 @@ export const EVENT_PLACEHOLDERS: Record<string, EventPlaceholder[]> = {
     { key: 'transactionId', label: 'شناسه پیگیری تراکنش', example: 'TRX-84911' },
     { key: 'date', label: 'تاریخ تراکنش', example: '۱۴۰۵/۰۷/۱۵' },
   ],
+  wallet_expired: [
+    { key: 'amount', label: 'مبلغ منقضی‌شده (تومان)', example: '۱۵۰,۰۰۰' },
+    { key: 'days', label: 'تعداد روزهای عدم فعالیت', example: '۹۰' },
+    { key: 'lastDepositDate', label: 'تاریخ آخرین واریزی', example: '۱۴۰۵/۰۴/۱۵' },
+    { key: 'customerName', label: 'نام خریدار / کاربر', example: 'محمد رضایی' },
+  ],
   inventory_low_stock: [
     { key: 'productName', label: 'نام محصول', example: 'صندلی ناهارخوری چوبی راش' },
     { key: 'sku', label: 'کد انبارداری (SKU)', example: 'CHAIR-BEECH-01' },
@@ -282,6 +288,20 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettingsData = {
       userCustomText: 'مبلغ {amount} تومان بابت سفارش {orderNumber} از کیف پول شما کسر شد. مانده جدید: {balance} تومان.',
       adminCustomText: 'کسر مبلغ {amount} تومان از کیف پول کاربر برای سفارش {orderNumber} انجام شد.',
       availablePlaceholders: ['amount', 'balance', 'orderNumber'],
+    },
+    wallet_expired: {
+      key: 'wallet_expired',
+      title: 'انقضای موجودی کیف پول',
+      description: 'هنگامی که به دلیل عدم فعالیت و گذشت مهلت تعیین‌شده، موجودی کاربر منقضی و صفر می‌شود',
+      category: 'wallet',
+      sendMode: 'text',
+      userInApp: true,
+      adminInApp: true,
+      userSms: true,
+      adminSms: false,
+      userCustomText: 'کاربر گرامی، با توجه به عدم فعالیت و سپری شدن {days} روز از آخرین واریزی، موجودی کیف پول شما به مبلغ {amount} تومان منقضی گردید.',
+      adminCustomText: 'انقضای کیف پول: موجودی کاربر {customerName} به مبلغ {amount} تومان به دلیل عدم فعالیت ({days} روز) منقضی و صفر شد.',
+      availablePlaceholders: ['amount', 'days', 'lastDepositDate', 'customerName'],
     },
     inventory_low_stock: {
       key: 'inventory_low_stock',

@@ -113,4 +113,13 @@ export class WalletController {
   ) {
     return this.walletService.toggleStatus(userId, isActive);
   }
+
+  @Post('admin/expire-check')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Admin: Trigger manual wallet expiry check across all wallets' })
+  triggerExpiryCheck() {
+    return this.walletService.checkAndExpireAllWallets();
+  }
 }

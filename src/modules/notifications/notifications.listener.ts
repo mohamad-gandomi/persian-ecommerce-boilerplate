@@ -293,6 +293,34 @@ export class NotificationsListener {
     });
   }
 
+  @OnEvent('wallet.expired')
+  async handleWalletExpired(payload: {
+    userId: string;
+    amount: number;
+    days: number;
+    lastDepositDate?: string;
+    userPhone?: string;
+    customerName?: string;
+  }) {
+    const formattedAmount = payload.amount.toLocaleString('fa-IR');
+    const formattedDays = payload.days.toLocaleString('fa-IR');
+
+    await this.dispatchEvent('wallet_expired', {
+      userId: payload.userId,
+      userPhone: payload.userPhone,
+      title: 'انقضای موجودی کیف پول',
+      defaultMessage: `موجودی کیف پول شما به مبلغ ${formattedAmount} تومان به دلیل عدم فعالیت پس از ${formattedDays} روز منقضی گردید.`,
+      link: '/wallets',
+      type: NotificationType.WALLET,
+      templateVariables: {
+        amount: formattedAmount,
+        days: formattedDays,
+        lastDepositDate: payload.lastDepositDate || '—',
+        customerName: payload.customerName || 'کاربر گرامی',
+      },
+    });
+  }
+
   // ----------------------------------------------------
   // Event: Low Stock Alert
   // ----------------------------------------------------

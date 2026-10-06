@@ -17,6 +17,8 @@ import {
   CheckCircle2,
   Info,
   Bell,
+  Clock,
+  RefreshCw,
 } from 'lucide-react';
 import { api, MediaSettings } from '@/lib/api';
 import { Header } from '@/components/admin/header';
@@ -86,6 +88,8 @@ export default function SettingsPage() {
     minOrderAmount: 100000,
     releaseOnStatus: 'DELIVERED',
     cookieDays: 30,
+    walletExpiryEnabled: false,
+    walletExpiryDays: 90,
   });
 
   const { data: remoteReferralSettings } = useQuery({
@@ -99,6 +103,8 @@ export default function SettingsPage() {
       setReferralSettings({
         ...remoteReferralSettings,
         enableGlobalReward: remoteReferralSettings.enableGlobalReward ?? true,
+        walletExpiryEnabled: remoteReferralSettings.walletExpiryEnabled ?? false,
+        walletExpiryDays: remoteReferralSettings.walletExpiryDays ?? 90,
       });
     }
   }, [remoteReferralSettings]);
@@ -110,6 +116,23 @@ export default function SettingsPage() {
       queryClient.invalidateQueries({ queryKey: ['admin-referral-settings'] });
     },
     onError: (err: any) => toast.error(err.message || 'خطا در ذخیره تنظیمات معرف'),
+  });
+
+  const triggerExpiryMutation = useMutation({
+    mutationFn: () => api.triggerWalletExpiryCheck(),
+    onSuccess: (res) => {
+      if (res.expiredWalletsCount > 0) {
+        toast.success(
+          `بررسی انقضا انجام شد: ${res.expiredWalletsCount} کیف پول منقضی و مبلغ ${new Intl.NumberFormat('fa-IR').format(res.totalExpiredAmount)} تومان کسر گردید.`,
+        );
+      } else {
+        toast.info('بررسی انقضا انجام شد: هیچ کیف پولی منقضی نشد.');
+      }
+      queryClient.invalidateQueries({ queryKey: ['admin-wallets'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'خطا در بررسی انقضای کیف‌پول‌ها');
+    },
   });
 
   // ----------------------------------------------------
@@ -447,6 +470,77 @@ export default function SettingsPage() {
                       <span className="text-[10px] text-muted-foreground">مدت زمانی که کلیک کاربر روی لینک معرف معتبر است.</span>
                     </div>
                   </div>
+                </div>
+
+                {/* 5. Wallet Balance Expiry Policy */}
+                <div className="space-y-4 pt-4 border-t border-border/60">
+                  <div className="flex items-center justify-between p-3.5 rounded-xl border border-amber-200 dark:border-amber-950/60 bg-amber-50/40 dark:bg-amber-950/10">
+                    <div className="space-y-0.5 text-right">
+                      <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-amber-600" />
+                        <span>تعیین تاریخ انقضای موجودی کیف پول (Wallet Expiry Policy)</span>
+                      </span>
+                      <span className="text-[11px] text-muted-foreground block">
+                        در صورت فعال‌سازی، اگر کاربر طی مدت زمان مشخصی پس از آخرین واریزی (شارژ، پاداش، استرداد و ...) تراکنش افزایشی نداشته باشد، موجودی کیف پول منقضی شده و صفر می‌گردد.
+                      </span>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={referralSettings.walletExpiryEnabled ?? false}
+                        onChange={(e) =>
+                          setReferralSettings({ ...referralSettings, walletExpiryEnabled: e.target.checked })
+                        }
+                      />
+                      <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                    </label>
+                  </div>
+
+                  {referralSettings.walletExpiryEnabled && (
+                    <div className="p-4 rounded-xl border border-border/70 bg-card/60 space-y-4 animate-in fade-in-50 duration-200">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5 text-right">
+                          <label className="text-xs font-semibold text-foreground">
+                            مدت زمان انقضا از آخرین واریزی (روز)
+                          </label>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="3650"
+                            value={referralSettings.walletExpiryDays ?? 90}
+                            onChange={(e) =>
+                              setReferralSettings({
+                                ...referralSettings,
+                                walletExpiryDays: parseInt(e.target.value, 10) || 90,
+                              })
+                            }
+                            className="font-sans text-xs dir-ltr text-right"
+                          />
+                          <span className="text-[10px] text-muted-foreground">
+                            مثال: اگر ۹۰ روز تنظیم شود، ۹۰ روز پس از آخرین واریزی موجودی منقضی خواهد شد.
+                          </span>
+                        </div>
+
+                        <div className="space-y-1.5 text-right flex flex-col justify-end">
+                          <label className="text-xs font-semibold text-foreground">اجرای دستی بررسی انقضا</label>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => triggerExpiryMutation.mutate()}
+                            disabled={triggerExpiryMutation.isPending}
+                            className="h-9 text-xs font-sans gap-2 border-amber-500/30 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                          >
+                            <RefreshCw className={`w-3.5 h-3.5 ${triggerExpiryMutation.isPending ? 'animate-spin' : ''}`} />
+                            <span>{triggerExpiryMutation.isPending ? 'در حال بررسی...' : 'بررسی و صفر کردن کیف‌پول‌های منقضی‌شده'}</span>
+                          </Button>
+                          <span className="text-[10px] text-muted-foreground">
+                            تراکنش انقضا به عنوان «انقضای موجودی به دلیل عدم فعالیت» در تاریخچه کیف پول ثبت خواهد شد.
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
               <CardFooter className="flex justify-end pt-3 border-t border-border/60">
