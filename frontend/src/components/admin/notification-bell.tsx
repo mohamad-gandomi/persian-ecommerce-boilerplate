@@ -12,6 +12,7 @@ import {
   FileText,
   ShieldAlert,
   ExternalLink,
+  ArrowLeft,
 } from 'lucide-react';
 import { api, API_BASE, NotificationItem } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -38,7 +39,7 @@ export function NotificationBell() {
   // 2. Fetch latest notifications when popover is open
   const { data: notifData, isLoading } = useQuery({
     queryKey: ['admin-notifications-list'],
-    queryFn: () => api.getAdminNotifications({ limit: 8 }),
+    queryFn: () => api.getAdminNotifications({ limit: 5 }),
     enabled: isOpen,
     refetchInterval: isOpen ? 10000 : false,
   });
@@ -224,6 +225,22 @@ export function NotificationBell() {
               </div>
             ))
           )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-2 border-t border-border/60 bg-muted/20 text-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-xs font-semibold text-primary hover:text-primary hover:bg-primary/10 h-8.5 justify-center gap-1.5 font-sans"
+            onClick={() => {
+              setIsOpen(false);
+              router.push('/notifications');
+            }}
+          >
+            <span>مشاهده همه اعلان‌ها</span>
+            <ArrowLeft className="w-3.5 h-3.5" />
+          </Button>
         </div>
       </PopoverContent>
     </Popover>

@@ -1046,12 +1046,13 @@ export const api = {
     fetcher<FeaturesConfig>('/settings/features'),
 
   // Notifications
-  getAdminNotifications: (params?: { page?: number; limit?: number; unreadOnly?: boolean; type?: string }) => {
+  getAdminNotifications: (params?: { page?: number; limit?: number; unreadOnly?: boolean; type?: string; search?: string }) => {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.append('page', String(params.page));
     if (params?.limit) searchParams.append('limit', String(params.limit));
     if (params?.unreadOnly) searchParams.append('unreadOnly', 'true');
-    if (params?.type) searchParams.append('type', params.type);
+    if (params?.type && params.type !== 'ALL') searchParams.append('type', params.type);
+    if (params?.search) searchParams.append('search', params.search);
     const qs = searchParams.toString();
     return fetcher<{ data: NotificationItem[]; meta: { total: number; page: number; limit: number; totalPages: number } }>(
       `/notifications/admin${qs ? `?${qs}` : ''}`,
@@ -1069,6 +1070,11 @@ export const api = {
   markAllAdminNotificationsAsRead: () =>
     fetcher<any>('/notifications/admin/read-all', {
       method: 'PATCH',
+    }),
+
+  deleteNotification: (id: string) =>
+    fetcher<any>(`/notifications/${id}`, {
+      method: 'DELETE',
     }),
 
   getNotificationSettings: () =>

@@ -4,6 +4,7 @@ import {
   Post,
   Patch,
   Put,
+  Delete,
   Body,
   Param,
   Query,
@@ -71,6 +72,19 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Customer: Mark all my notifications as read' })
   markAllMyRead(@CurrentUser('id') userId: string) {
     return this.notificationsService.markAllAsRead(userId, false);
+  }
+
+  @Delete(':id')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Delete a notification' })
+  deleteNotification(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: string,
+  ) {
+    const isAdmin = role === 'ADMIN';
+    return this.notificationsService.deleteNotification(id, userId, isAdmin);
   }
 
   // ----------------------------------------------------

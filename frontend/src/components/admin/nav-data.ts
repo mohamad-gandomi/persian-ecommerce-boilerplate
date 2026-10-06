@@ -14,6 +14,7 @@ import {
   Gift,
   Zap,
   Settings,
+  Bell,
   type LucideIcon,
 } from 'lucide-react';
 import { FeaturesConfig } from '@/types';
@@ -82,6 +83,12 @@ export const shopNavItems: NavItem[] = [
     title: 'کاربران و مشتریان',
     href: '/users',
     icon: Users,
+  },
+  {
+    title: 'مرکز اعلان‌ها',
+    href: '/notifications',
+    icon: Bell,
+    featureKey: 'notifications',
   },
   {
     title: 'تنظیمات سامانه',

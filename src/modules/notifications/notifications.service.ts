@@ -75,7 +75,7 @@ export class NotificationsService {
    * Customer notifications query
    */
   async findForUser(userId: string, filters: FilterNotificationsDto) {
-    const { page = 1, limit = 20, type, unreadOnly } = filters;
+    const { page = 1, limit = 20, type, unreadOnly, search } = filters;
     const skip = (page - 1) * limit;
 
     const where: Prisma.NotificationWhereInput = {
@@ -88,6 +88,14 @@ export class NotificationsService {
 
     if (unreadOnly) {
       where.isRead = false;
+    }
+
+    if (search && search.trim()) {
+      const q = search.trim();
+      where.OR = [
+        { title: { contains: q, mode: 'insensitive' } },
+        { message: { contains: q, mode: 'insensitive' } },
+      ];
     }
 
     const [items, total] = await Promise.all([
@@ -115,7 +123,7 @@ export class NotificationsService {
    * Admin notifications query (notifications sent to ADMIN role or store-wide)
    */
   async findForAdmin(filters: FilterNotificationsDto) {
-    const { page = 1, limit = 20, type, unreadOnly } = filters;
+    const { page = 1, limit = 20, type, unreadOnly, search } = filters;
     const skip = (page - 1) * limit;
 
     const where: Prisma.NotificationWhereInput = {
@@ -128,6 +136,14 @@ export class NotificationsService {
 
     if (unreadOnly) {
       where.isRead = false;
+    }
+
+    if (search && search.trim()) {
+      const q = search.trim();
+      where.OR = [
+        { title: { contains: q, mode: 'insensitive' } },
+        { message: { contains: q, mode: 'insensitive' } },
+      ];
     }
 
     const [items, total] = await Promise.all([
@@ -229,6 +245,27 @@ export class NotificationsService {
         },
       });
     }
+  }
+
+  /**
+   * Delete notification
+   */
+  async deleteNotification(id: string, userId?: string, isAdmin = false) {
+    const notification = await this.prisma.notification.findUnique({
+      where: { id },
+    });
+
+    if (!notification) {
+      throw new NotFoundException('اعلان مورد نظر یافت نشد');
+    }
+
+    if (!isAdmin && notification.userId !== userId) {
+      throw new NotFoundException('دسترسی به این اعلان مجاز نیست');
+    }
+
+    return this.prisma.notification.delete({
+      where: { id },
+    });
   }
 
   /**

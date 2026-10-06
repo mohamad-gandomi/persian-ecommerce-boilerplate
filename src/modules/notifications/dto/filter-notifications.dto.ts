@@ -28,4 +28,8 @@ export class FilterNotificationsDto {
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   unreadOnly?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  search?: string;
 }
