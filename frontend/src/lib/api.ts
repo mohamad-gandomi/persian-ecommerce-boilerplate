@@ -574,6 +574,7 @@ export const api = {
         if (typeof document !== 'undefined') {
           const role = data.data.user.role || 'CUSTOMER';
           document.cookie = `auth_role=${role}; path=/; max-age=604800; SameSite=Lax`;
+          document.cookie = `auth_token=${data.data.accessToken}; path=/; max-age=604800; SameSite=Lax`;
         }
       }
       if (typeof window !== 'undefined') {
@@ -581,6 +582,62 @@ export const api = {
       }
     }
     return data.data;
+  },
+
+  register: async (data: { firstName: string; lastName: string; email: string; password: string; phone?: string }) => {
+    const res = await fetch(`${API_BASE}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'خطا در ثبت‌نام حساب کاربری');
+    }
+    const resData = await res.json();
+    if (resData?.data?.accessToken) {
+      localStorage.setItem('auth_token', resData.data.accessToken);
+      if (resData?.data?.user) {
+        localStorage.setItem('auth_user', JSON.stringify(resData.data.user));
+        if (typeof document !== 'undefined') {
+          const role = resData.data.user.role || 'CUSTOMER';
+          document.cookie = `auth_role=${role}; path=/; max-age=604800; SameSite=Lax`;
+          document.cookie = `auth_token=${resData.data.accessToken}; path=/; max-age=604800; SameSite=Lax`;
+        }
+      }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('auth_changed'));
+      }
+    }
+    return resData.data;
+  },
+
+  forgotPassword: async (email: string) => {
+    const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'خطا در ارسال درخواست بازنشانی رمز عبور');
+    }
+    const resData = await res.json();
+    return resData.data || resData;
+  },
+
+  resetPassword: async (token: string, newPassword: string) => {
+    const res = await fetch(`${API_BASE}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, newPassword }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'خطا در بازنشانی رمز عبور');
+    }
+    const resData = await res.json();
+    return resData.data || resData;
   },
 
   sendOtp: async (phone: string) => {
@@ -621,6 +678,7 @@ export const api = {
         if (typeof document !== 'undefined') {
           const role = data.data.user.role || 'CUSTOMER';
           document.cookie = `auth_role=${role}; path=/; max-age=604800; SameSite=Lax`;
+          document.cookie = `auth_token=${data.data.accessToken}; path=/; max-age=604800; SameSite=Lax`;
         }
       }
       if (typeof window !== 'undefined') {
@@ -689,8 +747,9 @@ export const api = {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
       document.cookie = 'auth_role=; path=/; max-age=0; SameSite=Lax';
+      document.cookie = 'auth_token=; path=/; max-age=0; SameSite=Lax';
       window.dispatchEvent(new Event('auth_changed'));
-      window.location.href = '/auth/otp';
+      window.location.href = '/login';
     }
   },
 

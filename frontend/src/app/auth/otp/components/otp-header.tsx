@@ -9,6 +9,7 @@ interface OtpHeaderProps {
   mode?: 'OTP' | 'PASSWORD';
   step?: 'PHONE' | 'VERIFY';
   phone?: string;
+  isOtpAllowed?: boolean;
   onBackToPhone?: () => void;
 }
 
@@ -17,6 +18,7 @@ export function OtpHeader({
   mode = 'OTP',
   step = 'PHONE',
   phone,
+  isOtpAllowed = true,
   onBackToPhone,
 }: OtpHeaderProps) {
   return (
@@ -44,7 +46,7 @@ export function OtpHeader({
 
         <div className="flex items-center gap-1.5 text-[11px] font-sans text-primary bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-full">
           <Sparkles className="w-3 h-3 text-primary" />
-          <span>{mode === 'PASSWORD' ? 'ورود با کلمه عبور' : 'ورود امن پیامکی'}</span>
+          <span>{!isOtpAllowed || mode === 'PASSWORD' ? 'ورود با ایمیل و رمز عبور' : 'ورود امن پیامکی'}</span>
         </div>
       </div>
 
@@ -59,8 +61,8 @@ export function OtpHeader({
           </span>
         </Link>
         <p className="text-xs text-muted-foreground max-w-xs mx-auto leading-relaxed">
-          {mode === 'PASSWORD'
-            ? 'جهت دسترسی به پنل مدیریت، مشخصات کاربری خود را وارد فرمایید.'
+          {!isOtpAllowed || mode === 'PASSWORD'
+            ? 'جهت دسترسی به حساب کاربری، آدرس ایمیل و کلمه عبور خود را وارد نمایید.'
             : step === 'PHONE'
             ? 'ورود یا عضویت سریع و بدون نیاز به کلمه عبور با شماره تلفن همراه.'
             : `کد تأیید ۵ رقمی پیامک‌شده به شماره ${phone || 'همراه شما'} را وارد نمایید.`}

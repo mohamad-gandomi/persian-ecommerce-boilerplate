@@ -215,20 +215,27 @@ export class OrdersService {
       const cleanPhone = dto.customerPhone?.trim() || null;
       const cleanEmail = dto.customerEmail?.toLowerCase()?.trim() || null;
 
-      // 1. Try finding existing user by phone
-      if (cleanPhone) {
-        const userByPhone = await this.prisma.user.findFirst({
-          where: { phone: cleanPhone },
-        });
-        if (userByPhone) resolvedUserId = userByPhone.id;
+      const isNotificationsEnabled = this.configService.get<boolean>('features.notifications', true);
+
+      // When notifications/SMS module is disabled, customerEmail MUST be provided for guest checkout!
+      if (!isNotificationsEnabled && !cleanEmail) {
+        throw new BadRequestException('وارد کردن آدرس ایمیل برای ثبت سفارش مهمان و ایجاد حساب کاربری الزامی است.');
       }
 
-      // 2. Try finding existing user by email
-      if (!resolvedUserId && cleanEmail) {
+      // 1. Try finding existing user by email (primary when email is provided)
+      if (cleanEmail) {
         const userByEmail = await this.prisma.user.findUnique({
           where: { email: cleanEmail },
         });
         if (userByEmail) resolvedUserId = userByEmail.id;
+      }
+
+      // 2. Try finding existing user by phone (fallback)
+      if (!resolvedUserId && cleanPhone) {
+        const userByPhone = await this.prisma.user.findFirst({
+          where: { phone: cleanPhone },
+        });
+        if (userByPhone) resolvedUserId = userByPhone.id;
       }
 
       // 3. Auto-create guest user if not registered yet
@@ -243,8 +250,14 @@ export class OrdersService {
           ? `${cleanPhone.replace(/\D/g, '')}@guest.store.internal`
           : `guest-${Date.now()}@guest.store.internal`;
 
+        // Determine password: if guest supplied password use it, otherwise secure random hash
+        const passwordToHash =
+          dto.guestPassword && dto.guestPassword.trim().length >= 6
+            ? dto.guestPassword.trim()
+            : `Guest@${Date.now()}`;
+
         const salt = await bcrypt.genSalt(10);
-        const dummyPasswordHash = await bcrypt.hash(`Guest@${Date.now()}`, salt);
+        const dummyPasswordHash = await bcrypt.hash(passwordToHash, salt);
 
         try {
           const newUser = await this.prisma.user.create({

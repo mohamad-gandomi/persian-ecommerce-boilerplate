@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { api } from '@/lib/api';
+import { useFeatures } from '@/lib/use-features';
 import { OtpHeader } from '@/app/auth/otp/components/otp-header';
 import { OtpPhoneStep } from '@/app/auth/otp/components/otp-phone-step';
 import { OtpVerifyStep } from '@/app/auth/otp/components/otp-verify-step';
@@ -15,6 +16,9 @@ function UnifiedLoginContent() {
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get('redirect') || '/admin';
 
+  const { isEnabled } = useFeatures();
+  const isOtpAllowed = isEnabled('notifications');
+
   const [mode, setMode] = React.useState<'OTP' | 'PASSWORD'>('OTP');
   const [step, setStep] = React.useState<'PHONE' | 'VERIFY'>('PHONE');
   const [phone, setPhone] = React.useState('');
@@ -24,6 +28,12 @@ function UnifiedLoginContent() {
   const [devCode, setDevCode] = React.useState<string | undefined>(undefined);
   const [countdown, setCountdown] = React.useState(0);
   const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!isOtpAllowed && mode !== 'PASSWORD') {
+      setMode('PASSWORD');
+    }
+  }, [isOtpAllowed, mode]);
 
   React.useEffect(() => {
     if (countdown <= 0) return;
@@ -88,11 +98,7 @@ function UnifiedLoginContent() {
         toast.success(`خوش آمدید${name}!`);
       }
 
-      if (res.user.role === 'ADMIN' && (!searchParams.get('redirect') || searchParams.get('redirect') === '/shop')) {
-        router.push('/admin');
-      } else {
-        router.push(redirectUrl);
-      }
+      handleAuthRedirect(res.user);
     } catch (err: any) {
       const msg = err.message || 'کد واردشده نامعتبر یا منقضی شده است';
       setError(msg);
@@ -102,12 +108,22 @@ function UnifiedLoginContent() {
     }
   };
 
-  const handlePasswordSuccess = (user: any) => {
-    if (user.role === 'ADMIN' && (!searchParams.get('redirect') || searchParams.get('redirect') === '/shop')) {
-      router.push('/admin');
+  const handleAuthRedirect = (user: any) => {
+    const redirectParam = searchParams.get('redirect');
+
+    if (user?.role === 'ADMIN') {
+      // مدیر سیستم همواره به پنل ادمین ریدایرکت می‌شود
+      const target = redirectParam && redirectParam.startsWith('/admin') ? redirectParam : '/admin';
+      window.location.href = target;
     } else {
-      router.push(redirectUrl);
+      // کاربران عادی به فروشگاه یا آدرس مقصد غیرادمین هدایت می‌شوند
+      const target = redirectParam && !redirectParam.startsWith('/admin') ? redirectParam : '/shop';
+      window.location.href = target;
     }
+  };
+
+  const handlePasswordSuccess = (user: any) => {
+    handleAuthRedirect(user);
   };
 
   return (
@@ -118,6 +134,7 @@ function UnifiedLoginContent() {
           mode={mode}
           step={step}
           phone={phone}
+          isOtpAllowed={isOtpAllowed}
           onBackToPhone={() => {
             setStep('PHONE');
             setError(null);
@@ -126,12 +143,15 @@ function UnifiedLoginContent() {
 
         <Card className="border border-border/80 shadow-xl bg-card/95 backdrop-blur-md rounded-3xl overflow-hidden">
           <CardContent className="p-6 sm:p-8">
-            {mode === 'PASSWORD' ? (
+            {mode === 'PASSWORD' || !isOtpAllowed ? (
               <PasswordLoginStep
                 onSuccess={handlePasswordSuccess}
+                isOtpAllowed={isOtpAllowed}
                 onSwitchToOtp={() => {
-                  setMode('OTP');
-                  setError(null);
+                  if (isOtpAllowed) {
+                    setMode('OTP');
+                    setError(null);
+                  }
                 }}
               />
             ) : step === 'PHONE' ? (

@@ -132,7 +132,7 @@ export function OtpPhoneStep({
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline cursor-pointer py-1"
           >
             <KeyRound className="w-3.5 h-3.5" />
-            <span>ورود با نام کاربری و رمز عبور</span>
+            <span>ورود با ایمیل و رمز عبور</span>
           </button>
         </div>
       )}

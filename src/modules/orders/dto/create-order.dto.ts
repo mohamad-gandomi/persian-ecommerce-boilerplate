@@ -83,6 +83,14 @@ export class CreateOrderDto {
   @IsString()
   customerPhone?: string;
 
+  @ApiPropertyOptional({
+    description: 'Optional password for customer account auto-creation on guest checkout',
+    example: 'Secret123!',
+  })
+  @IsOptional()
+  @IsString()
+  guestPassword?: string;
+
   @ApiProperty({ type: [OrderItemInputDto] })
   @IsArray()
   @ArrayMinSize(1)

@@ -14,6 +14,7 @@ import { SendOtpDto, VerifyOtpDto } from './dto/otp.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { KavenegarService } from './kavenegar.service';
 import { Role } from '@/common/enums/role.enum';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
@@ -21,6 +22,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private kavenegarService: KavenegarService,
+    private configService: ConfigService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -64,28 +66,22 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const identifier = dto.email.trim();
-    const user = await this.prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: identifier.toLowerCase() },
-          { phone: identifier },
-          { phone: this.normalizePhone(identifier) },
-        ],
-      },
+    const email = dto.email.trim().toLowerCase();
+    const user = await this.prisma.user.findUnique({
+      where: { email },
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid email or password.');
+      throw new UnauthorizedException('آدرس ایمیل یا کلمه عبور واردشده صحیح نمی‌باشد.');
     }
 
     const isMatch = await bcrypt.compare(dto.password, user.passwordHash);
     if (!isMatch) {
-      throw new UnauthorizedException('Invalid email or password.');
+      throw new UnauthorizedException('آدرس ایمیل یا کلمه عبور واردشده صحیح نمی‌باشد.');
     }
 
     if (!user.isActive) {
-      throw new UnauthorizedException('User account has been deactivated.');
+      throw new UnauthorizedException('حساب کاربری شما غیرفعال شده است.');
     }
 
     const token = this.generateToken(user.id, user.email, user.role);
@@ -98,7 +94,71 @@ export class AuthService {
     };
   }
 
+  async forgotPassword(email: string) {
+    const cleanEmail = email.trim().toLowerCase();
+    const user = await this.prisma.user.findUnique({
+      where: { email: cleanEmail },
+    });
+
+    if (!user) {
+      return {
+        success: true,
+        message: 'در صورت ثبت بودن این آدرس ایمیل در سیستم، دستورالعمل بازنشانی ارسال شد.',
+      };
+    }
+
+    const resetToken = this.jwtService.sign(
+      { sub: user.id, email: user.email, purpose: 'reset-password' },
+      { expiresIn: '1h' },
+    );
+
+    return {
+      success: true,
+      message: 'لینک بازنشانی کلمه عبور با موفقیت صادر شد.',
+      resetToken,
+    };
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    let payload: any;
+    try {
+      payload = this.jwtService.verify(token);
+    } catch {
+      throw new BadRequestException('توکن بازنشانی کلمه عبور نامعتبر است یا منقضی شده است.');
+    }
+
+    if (payload.purpose !== 'reset-password' || !payload.sub) {
+      throw new BadRequestException('توکن بازنشانی نامعتبر است.');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+    });
+
+    if (!user) {
+      throw new NotFoundException('کاربر مورد نظر یافت نشد.');
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash },
+    });
+
+    return {
+      success: true,
+      message: 'کلمه عبور شما با موفقیت تغییر یافت. اکنون می‌توانید وارد شوید.',
+    };
+  }
+
   async sendOtp(dto: SendOtpDto) {
+    const isNotificationsEnabled = this.configService.get<boolean>('features.notifications', true);
+    if (!isNotificationsEnabled) {
+      throw new BadRequestException('سامانه ارسال پیامک موقتاً غیرفعال است. لطفاً از طریق ایمیل و کلمه عبور وارد شوید.');
+    }
+
     const cleanPhone = this.normalizePhone(dto.phone);
 
     // Cooldown verification (60 seconds)
@@ -152,6 +212,11 @@ export class AuthService {
   }
 
   async verifyOtp(dto: VerifyOtpDto) {
+    const isNotificationsEnabled = this.configService.get<boolean>('features.notifications', true);
+    if (!isNotificationsEnabled) {
+      throw new BadRequestException('سامانه ورود با پیامک موقتاً غیرفعال است. لطفاً از طریق ایمیل و کلمه عبور وارد شوید.');
+    }
+
     const cleanPhone = this.normalizePhone(dto.phone);
     const code = dto.code.trim();
 
