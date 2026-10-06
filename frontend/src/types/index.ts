@@ -532,6 +532,7 @@ export interface FeaturesConfig {
   coupons: boolean;
   attributes: boolean;
   flashDeals: boolean;
+  notifications: boolean;
 }
 
 export interface FlashDealItem {

@@ -26,6 +26,7 @@ export default () => ({
     coupons: parseBool(process.env.FEATURE_COUPONS, true),
     attributes: parseBool(process.env.FEATURE_ATTRIBUTES, true),
     flashDeals: parseBool(process.env.FEATURE_FLASH_DEALS, true),
+    notifications: parseBool(process.env.FEATURE_NOTIFICATIONS, true),
   },
 });
 

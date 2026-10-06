@@ -37,7 +37,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      <Toaster richColors position="top-right" />
+      <Toaster
+        richColors
+        position="top-right"
+        dir="rtl"
+        toastOptions={{
+          style: {
+            fontFamily: 'var(--font-ravi), Ravi, sans-serif',
+            direction: 'rtl',
+            textAlign: 'right',
+          },
+          className: 'font-sans font-ravi',
+        }}
+      />
     </QueryClientProvider>
   );
 }

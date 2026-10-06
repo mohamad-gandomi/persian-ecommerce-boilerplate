@@ -252,3 +252,13 @@ option {
   font-size: 0.85rem;
 }
 
+/* Global Font Consistency for Toasts, Notifications, and Popovers */
+[data-sonner-toaster],
+[data-sonner-toast],
+[data-sonner-toast] *,
+[data-radix-popper-content-wrapper],
+[data-radix-popper-content-wrapper] * {
+  font-family: var(--font-ravi), 'Ravi', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+

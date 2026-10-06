@@ -7,6 +7,8 @@ import {
 import { PrismaService } from '@/database/prisma.service';
 import { WalletTransactionType, Prisma } from '@prisma/client';
 
+import { EventEmitter2 } from '@nestjs/event-emitter';
+
 export interface WalletOperationParams {
   userId: string;
   amount: number | Prisma.Decimal;
@@ -17,7 +19,10 @@ export interface WalletOperationParams {
 
 @Injectable()
 export class WalletService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   /**
    * Returns existing wallet or creates one atomically if not found.
@@ -91,7 +96,7 @@ export class WalletService {
       throw new BadRequestException('مبلغ واریز به کیف پول باید بزرگتر از صفر باشد');
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       // 1. Fetch or create wallet
       let wallet = await tx.wallet.findUnique({
         where: { userId: params.userId },
@@ -146,6 +151,22 @@ export class WalletService {
         },
       };
     });
+
+    // Emit wallet.credited event asynchronously
+    this.prisma.user
+      .findUnique({ where: { id: params.userId }, select: { phone: true } })
+      .then((user) => {
+        this.eventEmitter.emit('wallet.credited', {
+          userId: params.userId,
+          amount: amountNum,
+          balanceAfter: result.balance,
+          description: params.description,
+          userPhone: user?.phone,
+        });
+      })
+      .catch(() => {});
+
+    return result;
   }
 
   /**
@@ -157,7 +178,7 @@ export class WalletService {
       throw new BadRequestException('مبلغ کسر از کیف پول باید بزرگتر از صفر باشد');
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const wallet = await tx.wallet.findUnique({
         where: { userId: params.userId },
       });
@@ -210,6 +231,23 @@ export class WalletService {
         },
       };
     });
+
+    // Emit wallet.debited event asynchronously
+    this.prisma.user
+      .findUnique({ where: { id: params.userId }, select: { phone: true } })
+      .then((user) => {
+        this.eventEmitter.emit('wallet.debited', {
+          userId: params.userId,
+          amount: amountNum,
+          balanceAfter: result.balance,
+          description: params.description,
+          userPhone: user?.phone,
+          orderNumber: params.referenceId,
+        });
+      })
+      .catch(() => {});
+
+    return result;
   }
 
   /**

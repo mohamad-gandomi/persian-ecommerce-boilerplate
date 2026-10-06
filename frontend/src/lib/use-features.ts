@@ -11,6 +11,7 @@ export const DEFAULT_FEATURES: FeaturesConfig = {
   coupons: true,
   attributes: true,
   flashDeals: true,
+  notifications: true,
 };
 
 export function useFeatures() {

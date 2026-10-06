@@ -14,6 +14,7 @@ import { OrderStatus, PaymentStatus, TransactionStatus, Role, WalletTransactionT
 import { WalletService } from '@/modules/wallet/wallet.service';
 import { ReferralService } from '@/modules/referral/referral.service';
 import { FlashDealsService } from '@/modules/flash-deals/flash-deals.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
@@ -26,6 +27,7 @@ export class OrdersService {
     private referralService: ReferralService,
     private flashDealsService: FlashDealsService,
     private configService: ConfigService,
+    private eventEmitter: EventEmitter2,
   ) {}
 
   async findAll(filters: FilterOrdersDto) {
@@ -355,11 +357,20 @@ export class OrdersService {
         });
 
         // Decrement stock
+        // Decrement stock
         if (variant.product.manageStock) {
-          await this.prisma.productVariant.update({
+          const updatedVariant = await this.prisma.productVariant.update({
             where: { id: variant.id },
             data: { stockQuantity: { decrement: itemInput.quantity } },
           });
+          if (updatedVariant.stockQuantity <= 5) {
+            this.eventEmitter.emit('inventory.low_stock', {
+              productId: variant.productId,
+              productName: `${variant.product.name} (${variant.sku})`,
+              sku: variant.sku,
+              stockQuantity: updatedVariant.stockQuantity,
+            });
+          }
         }
       } else if (itemInput.productId) {
         const product = await this.prisma.product.findUnique({
@@ -408,10 +419,18 @@ export class OrdersService {
 
         // Decrement stock
         if (product.manageStock) {
-          await this.prisma.product.update({
+          const updatedProduct = await this.prisma.product.update({
             where: { id: product.id },
             data: { stockQuantity: { decrement: itemInput.quantity } },
           });
+          if (updatedProduct.stockQuantity <= 5) {
+            this.eventEmitter.emit('inventory.low_stock', {
+              productId: product.id,
+              productName: product.name,
+              sku: product.sku,
+              stockQuantity: updatedProduct.stockQuantity,
+            });
+          }
         }
       }
     }
@@ -582,6 +601,9 @@ export class OrdersService {
       },
     });
 
+    // Emit order.created event
+    this.eventEmitter.emit('order.created', { order });
+
     return order;
   }
 
@@ -707,6 +729,14 @@ export class OrdersService {
         }
       }
     }
+
+    // Emit order.status_changed event
+    this.eventEmitter.emit('order.status_changed', {
+      order: updated,
+      oldStatus: order.status,
+      newStatus,
+      note: statusNote,
+    });
 
     return updated;
   }

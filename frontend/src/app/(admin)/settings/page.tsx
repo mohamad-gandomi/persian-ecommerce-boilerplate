@@ -16,9 +16,11 @@ import {
   Sliders,
   CheckCircle2,
   Info,
+  Bell,
 } from 'lucide-react';
 import { api, MediaSettings } from '@/lib/api';
 import { Header } from '@/components/admin/header';
+import { NotificationSettingsTab } from '@/components/admin/settings/notification-settings-tab';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -34,6 +36,9 @@ export default function SettingsPage() {
 
   React.useEffect(() => {
     if (!isEnabled('referral') && activeTab === 'referral') {
+      setActiveTab('store');
+    }
+    if (!isEnabled('notifications') && activeTab === 'notifications') {
       setActiveTab('store');
     }
   }, [isEnabled, activeTab]);
@@ -154,9 +159,6 @@ export default function SettingsPage() {
               مدیریت یکپارچه مشخصات فروشگاه، قوانین و استراتژی‌های سیستم پاداش و معرف، و تنظیمات پردازش و فشرده‌سازی خودکار تصاویر.
             </p>
           </div>
-          <Badge variant="secondary" className="self-start sm:self-auto text-xs px-3 py-1 font-sans">
-            نسخه بویلرپلیت ۱.۰
-          </Badge>
         </div>
 
         {/* Settings Tabs */}
@@ -177,6 +179,12 @@ export default function SettingsPage() {
                 <ImageIcon className="w-4 h-4 shrink-0 text-emerald-600" />
                 <span>بهینه‌سازی تصاویر و WebP</span>
               </TabsTrigger>
+              {isEnabled('notifications') && (
+                <TabsTrigger value="notifications" className="gap-2 py-2 px-3.5 text-xs font-semibold rounded-lg font-sans shrink-0 whitespace-nowrap">
+                  <Bell className="w-4 h-4 shrink-0 text-amber-500" />
+                  <span>اعلان‌ها و درگاه پیامک</span>
+                </TabsTrigger>
+              )}
             </TabsList>
           </div>
 
@@ -576,6 +584,13 @@ export default function SettingsPage() {
               </CardFooter>
             </Card>
           </TabsContent>
+
+          {/* TAB 4: Notifications & Multi-Provider SMS Settings */}
+          {isEnabled('notifications') && (
+            <TabsContent value="notifications" className="space-y-6 m-0">
+              <NotificationSettingsTab />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </div>

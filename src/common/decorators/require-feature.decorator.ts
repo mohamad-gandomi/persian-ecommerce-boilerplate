@@ -9,7 +9,8 @@ export type FeatureKey =
   | 'coupons'
   | 'shipping'
   | 'attributes'
-  | 'flashDeals';
+  | 'flashDeals'
+  | 'notifications';
 
 export const RequireFeature = (feature: FeatureKey) =>
   SetMetadata(REQUIRE_FEATURE_KEY, feature);

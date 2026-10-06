@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import configuration from '@/config/configuration';
 import { DatabaseModule } from '@/database/database.module';
+import { SmsModule } from '@/modules/sms/sms.module';
+import { NotificationsModule } from '@/modules/notifications/notifications.module';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { UsersModule } from '@/modules/users/users.module';
 import { CategoriesModule } from '@/modules/categories/categories.module';
@@ -26,7 +29,10 @@ import { FeatureGuard } from '@/common/guards/feature.guard';
       isGlobal: true,
       load: [configuration],
     }),
+    EventEmitterModule.forRoot(),
     DatabaseModule,
+    SmsModule,
+    NotificationsModule,
     AuthModule,
     UsersModule,
     CategoriesModule,

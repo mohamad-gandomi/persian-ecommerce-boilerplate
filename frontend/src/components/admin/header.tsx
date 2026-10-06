@@ -5,9 +5,12 @@ import { Menu, Store, LogOut, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { NavContent } from './nav-content';
+import { NotificationBell } from './notification-bell';
 import { api } from '@/lib/api';
+import { useFeatures } from '@/lib/use-features';
 
 export function Header({ title }: { title?: string }) {
+  const { isEnabled } = useFeatures();
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [userEmail, setUserEmail] = React.useState<string>('admin@example.com');
   const [userName, setUserName] = React.useState<string>('مدیر سیستم');
@@ -60,6 +63,9 @@ export function Header({ title }: { title?: string }) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {/* Notification Bell */}
+        {isEnabled('notifications') && <NotificationBell />}
+
         <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 text-[11px] font-medium border border-emerald-200/60 dark:border-emerald-800/60">
           <ShieldCheck className="w-3.5 h-3.5" />
           <span>سیستم آنلاین</span>

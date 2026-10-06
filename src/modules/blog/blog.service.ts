@@ -10,10 +10,14 @@ import { CreateBlogPostDto, UpdateBlogPostDto } from './dto/create-blog-post.dto
 import { CreateBlogCategoryDto } from './dto/create-blog-category.dto';
 import { UpdateBlogCategoryDto } from './dto/update-blog-category.dto';
 import { FilterBlogPostsDto } from './dto/filter-blog-posts.dto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class BlogService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private eventEmitter: EventEmitter2,
+  ) {}
 
   // --- Categories ---
 
@@ -263,7 +267,7 @@ export class BlogService {
       throw new ConflictException(`Blog post with slug '${slug}' already exists`);
     }
 
-    return this.prisma.blogPost.create({
+    const post = await this.prisma.blogPost.create({
       data: {
         ...dto,
         slug,
@@ -275,6 +279,12 @@ export class BlogService {
         author: { select: { id: true, firstName: true, lastName: true } },
       },
     });
+
+    if (post.status === PostStatus.PUBLISHED) {
+      this.eventEmitter.emit('blog.post_published', { post });
+    }
+
+    return post;
   }
 
   async updatePost(id: string, dto: UpdateBlogPostDto) {
@@ -299,7 +309,7 @@ export class BlogService {
       }
     }
 
-    return this.prisma.blogPost.update({
+    const updated = await this.prisma.blogPost.update({
       where: { id },
       data: {
         ...dto,
@@ -313,6 +323,12 @@ export class BlogService {
         author: { select: { id: true, firstName: true, lastName: true } },
       },
     });
+
+    if (updated.status === PostStatus.PUBLISHED && existing.status !== PostStatus.PUBLISHED) {
+      this.eventEmitter.emit('blog.post_published', { post: updated });
+    }
+
+    return updated;
   }
 
   async deletePost(id: string) {

@@ -82,6 +82,24 @@ enum ReferralStatus {
   CANCELLED
 }
 
+enum NotificationType {
+  ORDER
+  WALLET
+  INVENTORY
+  BLOG
+  SYSTEM
+  REFERRAL
+  AUTH
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+
 // ----------------------------------------------------
 // Users & Authentication
 // ----------------------------------------------------
@@ -104,6 +122,7 @@ model User {
   referralCode  ReferralCode?
   referralsMade Referral[]     @relation("ReferrerUser")
   referral      Referral?      @relation("RefereeUser")
+  notifications Notification[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -626,3 +645,29 @@ model Referral {
 
   @@map("referrals")
 }
+
+// ----------------------------------------------------
+// Notifications & Alerts System
+// ----------------------------------------------------
+
+model Notification {
+  id        String               @id @default(uuid())
+  userId    String?
+  user      User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role?
+  title     String
+  message   String               @db.Text
+  type      NotificationType     @default(SYSTEM)
+  priority  NotificationPriority @default(NORMAL)
+  link      String?
+  isRead    Boolean              @default(false)
+  readAt    DateTime?
+  metadata  Json?
+  createdAt DateTime             @default(now())
+
+  @@index([userId, isRead])
+  @@index([role, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+

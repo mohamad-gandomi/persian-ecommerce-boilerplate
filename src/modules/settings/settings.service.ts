@@ -33,6 +33,8 @@ export class SettingsService {
       referral: this.configService.get<boolean>('features.referral', true),
       coupons: this.configService.get<boolean>('features.coupons', true),
       attributes: this.configService.get<boolean>('features.attributes', true),
+      flashDeals: this.configService.get<boolean>('features.flashDeals', true),
+      notifications: this.configService.get<boolean>('features.notifications', true),
     };
   }
 

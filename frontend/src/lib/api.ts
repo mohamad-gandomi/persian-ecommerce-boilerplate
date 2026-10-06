@@ -42,6 +42,157 @@ export interface MediaSettings {
   showOptimizationOptions?: boolean;
 }
 
+export interface NotificationItem {
+  id: string;
+  userId?: string | null;
+  role?: 'ADMIN' | 'CUSTOMER' | null;
+  title: string;
+  message: string;
+  type: 'ORDER' | 'WALLET' | 'INVENTORY' | 'BLOG' | 'SYSTEM' | 'REFERRAL' | 'AUTH';
+  priority: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+  link?: string | null;
+  isRead: boolean;
+  readAt?: string | null;
+  metadata?: any;
+  createdAt: string;
+}
+
+export interface EventPlaceholder {
+  key: string;
+  label: string;
+  example: string;
+}
+
+export interface NotificationEventConfig {
+  key: string;
+  title: string;
+  description: string;
+  category: 'orders' | 'wallet' | 'inventory' | 'blog' | 'auth';
+  sendMode?: 'pattern' | 'text';
+  userInApp: boolean;
+  adminInApp: boolean;
+  userSms: boolean;
+  adminSms: boolean;
+
+  // User message & templates
+  userKavenegarTemplate?: string;
+  userMelipayamakPatternCode?: string;
+  userCustomText?: string;
+
+  // Admin message & templates
+  adminKavenegarTemplate?: string;
+  adminMelipayamakPatternCode?: string;
+  adminCustomText?: string;
+
+  // Backward-compatible fallbacks
+  kavenegarTemplate?: string;
+  melipayamakPatternCode?: string;
+  customText?: string;
+  availablePlaceholders: string[];
+}
+
+export const EVENT_PLACEHOLDERS: Record<string, EventPlaceholder[]> = {
+  auth_otp: [
+    { key: 'code', label: 'کد تایید یکبار مصرف', example: '۴۹۲۱' },
+  ],
+  order_created: [
+    { key: 'orderNumber', label: 'شماره سفارش', example: 'SW-1025' },
+    { key: 'customerName', label: 'نام و نام خانوادگی خریدار', example: 'محمد رضایی' },
+    { key: 'customerPhone', label: 'شماره موبایل خریدار', example: '09121112233' },
+    { key: 'totalAmount', label: 'مبلغ کل سفارش (تومان)', example: '۲,۴۵۰,۰۰۰' },
+    { key: 'itemsCount', label: 'تعداد اقلام سفارش', example: '۳ قلم' },
+    { key: 'shippingMethod', label: 'روش ارسال انتخابی', example: 'پست پیشتاز' },
+    { key: 'paymentMethod', label: 'روش پرداخت', example: 'درگاه آنلاین' },
+    { key: 'orderLink', label: 'لینک مشاهده سفارش', example: '/profile/orders/SW-1025' },
+  ],
+  order_processing: [
+    { key: 'orderNumber', label: 'شماره سفارش', example: 'SW-1025' },
+    { key: 'customerName', label: 'نام خریدار', example: 'محمد رضایی' },
+    { key: 'itemsCount', label: 'تعداد اقلام سفارش', example: '۲ قلم' },
+    { key: 'estimatedDays', label: 'تخمین زمان آماده‌سازی', example: '۲ روز کاری' },
+  ],
+  order_shipped: [
+    { key: 'orderNumber', label: 'شماره سفارش', example: 'SW-1025' },
+    { key: 'customerName', label: 'نام خریدار', example: 'محمد رضایی' },
+    { key: 'carrier', label: 'شرکت پستی / باربری', example: 'تیپاکس' },
+    { key: 'trackingNumber', label: 'کد رهگیری مرسوله', example: '24891002341' },
+    { key: 'trackingUrl', label: 'لینک سامانه رهگیری مرسوله', example: 'https://tracking.post.ir' },
+  ],
+  order_delivered: [
+    { key: 'orderNumber', label: 'شماره سفارش', example: 'SW-1025' },
+    { key: 'customerName', label: 'نام خریدار', example: 'محمد رضایی' },
+    { key: 'deliveryDate', label: 'تاریخ تحویل سفارش', example: '۱۴۰۵/۰۷/۱۵' },
+    { key: 'surveyLink', label: 'لینک نظرسنجی و رضایت خریدار', example: '/orders/SW-1025/review' },
+  ],
+  order_cancelled: [
+    { key: 'orderNumber', label: 'شماره سفارش', example: 'SW-1025' },
+    { key: 'customerName', label: 'نام خریدار', example: 'محمد رضایی' },
+    { key: 'reason', label: 'علت لغو سفارش', example: 'درخواست مشتری' },
+    { key: 'refundAmount', label: 'مبلغ استرداد شده به کیف پول', example: '۲,۴۵۰,۰۰۰ تومان' },
+  ],
+  wallet_credited: [
+    { key: 'amount', label: 'مبلغ واریزی (تومان)', example: '۱۰۰,۰۰۰' },
+    { key: 'balance', label: 'مانده موجودی جدید (تومان)', example: '۵۵۰,۰۰۰' },
+    { key: 'reason', label: 'شرح / بابت واریز', example: 'پاداش دعوت دوستان' },
+    { key: 'transactionId', label: 'شناسه پیگیری تراکنش', example: 'TRX-84910' },
+    { key: 'date', label: 'تاریخ تراکنش', example: '۱۴۰۵/۰۷/۱۵' },
+  ],
+  wallet_debited: [
+    { key: 'amount', label: 'مبلغ کسر شده (تومان)', example: '۲۵۰,۰۰۰' },
+    { key: 'balance', label: 'مانده موجودی جدید (تومان)', example: '۳۰۰,۰۰۰' },
+    { key: 'orderNumber', label: 'شماره سفارش مرتبط', example: 'SW-1025' },
+    { key: 'transactionId', label: 'شناسه پیگیری تراکنش', example: 'TRX-84911' },
+    { key: 'date', label: 'تاریخ تراکنش', example: '۱۴۰۵/۰۷/۱۵' },
+  ],
+  inventory_low_stock: [
+    { key: 'productName', label: 'نام محصول', example: 'صندلی ناهارخوری چوبی راش' },
+    { key: 'sku', label: 'کد انبارداری (SKU)', example: 'CHAIR-BEECH-01' },
+    { key: 'stockQuantity', label: 'موجودی باقی‌مانده در انبار', example: '۳' },
+    { key: 'price', label: 'قیمت محصول (تومان)', example: '۱,۸۵۰,۰۰۰' },
+    { key: 'productUrl', label: 'لینک محصول در سایت', example: '/products/chair-beech-01' },
+  ],
+  inventory_out_of_stock: [
+    { key: 'productName', label: 'نام محصول ناموجود', example: 'میز کار مدرن بلوطی' },
+    { key: 'sku', label: 'کد انبارداری (SKU)', example: 'DESK-OAK-02' },
+    { key: 'lastPrice', label: 'آخرین قیمت کالا (تومان)', example: '۴,۲۰۰,۰۰۰' },
+    { key: 'categoryName', label: 'دسته‌بندی محصول', example: 'میز و مبلمان اداری' },
+    { key: 'updatedAt', label: 'زمان اتمام موجودی', example: '۱۴۰۵/۰۷/۱۵' },
+  ],
+  blog_post_published: [
+    { key: 'postTitle', label: 'عنوان مقاله مجله', example: 'راهنمای چیدمان دکوراسیون مینیمال' },
+    { key: 'categoryName', label: 'نام دسته مقاله', example: 'دکوراسیون داخلی' },
+    { key: 'slug', label: 'نامک / لینک مقاله', example: 'minimalist-interior-guide' },
+    { key: 'authorName', label: 'نویسنده مقاله', example: 'تحریریه فروشگاه' },
+    { key: 'readingTime', label: 'مدت زمان مطالعه', example: '۵ دقیقه' },
+  ],
+  blog_comment_submitted: [
+    { key: 'postTitle', label: 'عنوان مقاله', example: 'راهنمای چیدمان دکوراسیون مینیمال' },
+    { key: 'commenterName', label: 'نام نظردهنده', example: 'سارا احمدی' },
+    { key: 'commentText', label: 'متن دیدگاه / نظر', example: 'مقاله بسیار کاربردی و زیبایی بود' },
+    { key: 'postUrl', label: 'لینک مقاله', example: '/blog/minimalist-interior-guide' },
+  ],
+};
+
+export interface NotificationSettings {
+  sms: {
+    enabled: boolean;
+    activeProvider: 'kavenegar' | 'melipayamak' | 'mock';
+    adminAlertPhones: string[];
+    providers: {
+      kavenegar: {
+        apiKey: string;
+        sender: string;
+      };
+      melipayamak: {
+        username: string;
+        password: string;
+        sender: string;
+      };
+    };
+  };
+  events: Record<string, NotificationEventConfig>;
+}
+
 
 function getAuthToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -818,4 +969,46 @@ export const api = {
 
   getFeatures: () =>
     fetcher<FeaturesConfig>('/settings/features'),
+
+  // Notifications
+  getAdminNotifications: (params?: { page?: number; limit?: number; unreadOnly?: boolean; type?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.append('page', String(params.page));
+    if (params?.limit) searchParams.append('limit', String(params.limit));
+    if (params?.unreadOnly) searchParams.append('unreadOnly', 'true');
+    if (params?.type) searchParams.append('type', params.type);
+    const qs = searchParams.toString();
+    return fetcher<{ data: NotificationItem[]; meta: { total: number; page: number; limit: number; totalPages: number } }>(
+      `/notifications/admin${qs ? `?${qs}` : ''}`,
+    );
+  },
+
+  getAdminUnreadCount: () =>
+    fetcher<number>('/notifications/admin/unread-count'),
+
+  markNotificationAsRead: (id: string) =>
+    fetcher<NotificationItem>(`/notifications/${id}/read`, {
+      method: 'PATCH',
+    }),
+
+  markAllAdminNotificationsAsRead: () =>
+    fetcher<any>('/notifications/admin/read-all', {
+      method: 'PATCH',
+    }),
+
+  getNotificationSettings: () =>
+    fetcher<NotificationSettings>('/notifications/settings'),
+
+  updateNotificationSettings: (data: Partial<NotificationSettings>) =>
+    fetcher<NotificationSettings>('/notifications/settings', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  testSmsConnection: (data: { providerId: string; phone: string; credentials?: any }) =>
+    fetcher<{ success: boolean; messageId?: string; isDev?: boolean; message?: string }>('/notifications/test-sms', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 };
+
