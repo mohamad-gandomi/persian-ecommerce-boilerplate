@@ -26,9 +26,22 @@ FEATURE_WALLET=true
 FEATURE_REFERRAL=true
 FEATURE_COUPONS=true
 FEATURE_ATTRIBUTES=true
+FEATURE_FLASH_DEALS=true
+FEATURE_NOTIFICATIONS=true
 ```
 
-> 💡 *Core operations like **Shipping**, **Orders**, and **Media** are always active. More modular features can be integrated following this exact pattern.*
+> 💡 *Core operations like **Shipping**, **Orders**, and **Media** are always active. Features automatically adapt both backend API guards, database queries, and admin UI navigation/dashboard widgets.*
+
+### 🧩 Available Feature Modules
+* **🔔 Notifications & SMS Gateway**: In-app notifications center, realtime SSE stream, multi-provider SMS (Kavenegar & Melipayamak), and automated store event triggers.
+* **⚡ Timed Flash Deals**: Special offer campaigns with countdown timers, customer cashbacks, and referrer bonuses.
+* **👛 Wallet & Expiry Policy**: Store balance system, auto-expiry of inactive credits, and transaction auditing.
+* **🎁 Referral & Affiliates**: Customer invite links, commission payouts, and referral stats.
+* **🏷️ Coupons & Promotions**: Percentage or fixed amount coupons with usage limits and date constraints.
+* **🎨 Variable Products & Attributes**: WooCommerce-like attributes, variations, colors, sizes, and specs.
+* **📝 Blog & SEO Content**: SEO-friendly articles, categories, and shopping guides.
+* **🔍 Adaptive Search & Command Palette**: Instant search across orders, products, coupons, SMS settings, wallets, and routes with active-feature filtering.
+* **🔌 Headless Architecture**: Completely decoupled NestJS REST API and Next.js Admin Dashboard, allowing any custom customer storefront to plug in cleanly via Swagger docs.
 
 ---
 

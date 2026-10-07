@@ -20,6 +20,8 @@ export function NavItemList({ items, onItemClick }: NavItemListProps) {
         let isActive = false;
         if (item.href === '/') {
           isActive = pathname === '/';
+        } else if (item.href === '/admin') {
+          isActive = pathname === '/admin';
         } else if (item.href.includes('?')) {
           isActive =
             pathname === item.href.split('?')[0] &&

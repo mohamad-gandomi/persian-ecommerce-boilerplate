@@ -12,10 +12,9 @@ interface DashboardHeaderProps {
 export function DashboardHeader({ ordersToFulfill }: DashboardHeaderProps) {
   const todayFormatted = React.useMemo(() => {
     return new Intl.DateTimeFormat('fa-IR', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
       day: 'numeric',
+      month: 'long',
+      year: 'numeric',
     }).format(new Date());
   }, []);
 

@@ -1,20 +1,21 @@
 import {
+  LayoutDashboard,
+  Users,
+  Bell,
+  Settings,
+  ShoppingBag,
+  Wallet,
+  Gift,
+  Truck,
+  Tag,
+  Zap,
   Package,
   Palette,
   FolderTree,
   BookOpen,
   BookmarkCheck,
-  Users,
   Image as ImageIcon,
   UploadCloud,
-  ShoppingBag,
-  Tag,
-  Truck,
-  Wallet,
-  Gift,
-  Zap,
-  Settings,
-  Bell,
   type LucideIcon,
 } from 'lucide-react';
 import { FeaturesConfig } from '@/types';
@@ -28,6 +29,52 @@ export interface NavItem {
   onClick?: () => void;
 }
 
+// گروه ۱: مدیریت و سامانه (پیشخوان + کاربران + مرکز اعلان‌ها + تنظیمات سامانه)
+export const systemNavItems: NavItem[] = [
+  {
+    title: 'پیشخوان مدیریت',
+    href: '/admin',
+    icon: LayoutDashboard,
+  },
+  {
+    title: 'کاربران و مشتریان',
+    href: '/users',
+    icon: Users,
+  },
+  {
+    title: 'مرکز اعلان‌ها',
+    href: '/notifications',
+    icon: Bell,
+    featureKey: 'notifications',
+  },
+  {
+    title: 'تنظیمات سامانه',
+    href: '/settings',
+    icon: Settings,
+  },
+];
+
+// گروه ۲: محصولات و کاتالوگ (محصولات + ویژگی‌ها + دسته‌بندی‌ها)
+export const productNavItems: NavItem[] = [
+  {
+    title: 'محصولات',
+    href: '/products',
+    icon: Package,
+  },
+  {
+    title: 'ویژگی‌ها و متغیرها',
+    href: '/attributes',
+    icon: Palette,
+    featureKey: 'attributes',
+  },
+  {
+    title: 'دسته‌بندی‌های محصولات',
+    href: '/categories',
+    icon: FolderTree,
+  },
+];
+
+// گروه ۳: فروشگاه و سفارش‌ها (سفارش‌ها + کیف‌پول + سیستم معرف + ارسال + تخفیف + فروش شگفت‌انگیز)
 export const shopNavItems: NavItem[] = [
   {
     title: 'سفارش‌ها',
@@ -63,40 +110,9 @@ export const shopNavItems: NavItem[] = [
     icon: Zap,
     featureKey: 'flashDeals',
   },
-  {
-    title: 'محصولات',
-    href: '/products',
-    icon: Package,
-  },
-  {
-    title: 'ویژگی‌ها و متغیرها',
-    href: '/attributes',
-    icon: Palette,
-    featureKey: 'attributes',
-  },
-  {
-    title: 'دسته‌بندی‌های محصولات',
-    href: '/categories',
-    icon: FolderTree,
-  },
-  {
-    title: 'کاربران و مشتریان',
-    href: '/users',
-    icon: Users,
-  },
-  {
-    title: 'مرکز اعلان‌ها',
-    href: '/notifications',
-    icon: Bell,
-    featureKey: 'notifications',
-  },
-  {
-    title: 'تنظیمات سامانه',
-    href: '/settings',
-    icon: Settings,
-  },
 ];
 
+// گروه ۴: رسانه و پرونده‌ها
 export const mediaNavItems: NavItem[] = [
   {
     title: 'کتابخانه رسانه',
@@ -110,6 +126,7 @@ export const mediaNavItems: NavItem[] = [
   },
 ];
 
+// گروه ۵: وبلاگ و مقالات
 export const blogNavItems: NavItem[] = [
   {
     title: 'نوشته‌ها و مقالات',
